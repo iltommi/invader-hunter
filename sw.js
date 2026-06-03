@@ -1,4 +1,4 @@
-const CACHE = 'invader-hunter-v1';
+const CACHE = 'invader-hunter-v2';
 
 const PRECACHE = [
   './index.html',
