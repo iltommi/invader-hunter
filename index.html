@@ -419,6 +419,7 @@
 </div>
 
 <div id="stat-popup">
+  <div class="stat-popup-row"><span>Remaining</span><span id="stat-remaining-popup" style="color:var(--cyan)">–</span></div>
   <div class="stat-popup-row"><span>Total</span><span id="stat-total">–</span></div>
   <div class="stat-popup-row"><span>Flashed</span><span id="stat-visited" style="color:var(--green)">0</span></div>
   <div class="stat-popup-row"><span>Points</span><span id="stat-points" style="color:var(--yellow)">0</span></div>
@@ -428,7 +429,6 @@
 <div class="controls">
   <div id="stat-remaining-btn" onclick="toggleStatPopup(event)" title="Tap for details">
     <div class="stat-val" id="stat-remaining">–</div>
-    <div class="stat-lbl">Remaining ▾</div>
   </div>
   <div class="topbar-sep"></div>
   <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">🔴 Unflashed</button>
@@ -708,8 +708,10 @@ function updateStats() {
   const vc = allPOI.filter(p => visited[p.id]).length;
   const pts = allPOI.filter(p => visited[p.id]).reduce((s,p) => s + (Number(p.points)||0), 0);
   const pct = allPOI.length ? Math.round(vc / allPOI.length * 100) : 0;
-  document.getElementById('stat-remaining').textContent = (allPOI.length - vc).toLocaleString();
-  document.getElementById('stat-total').textContent     = allPOI.length.toLocaleString();
+  const rem = (allPOI.length - vc).toLocaleString();
+  document.getElementById('stat-remaining').textContent       = rem;
+  document.getElementById('stat-remaining-popup').textContent = rem;
+  document.getElementById('stat-total').textContent           = allPOI.length.toLocaleString();
   document.getElementById('stat-visited').textContent   = vc.toLocaleString();
   document.getElementById('stat-points').textContent    = pts.toLocaleString();
   document.getElementById('stat-pct').textContent       = pct + '%';
