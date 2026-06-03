@@ -397,7 +397,6 @@
   <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">🔴 Unflashed</button>
   <button class="filter-btn active" id="btn-hide-destroyed" onclick="toggleDestroyed()" title="Show/hide destroyed">💀 <span style="text-decoration:line-through;opacity:.5">👁</span></button>
   <div class="ml-auto">
-    <select id="city-filter"><option value="">🌍</option></select>
     <input type="text" id="search" placeholder="Search ID…" style="width:160px">
     <button class="btn-export" onclick="exportJSON()">⬇ Export</button>
     <button class="btn-export" style="border-color:var(--cyan);color:var(--cyan)" onclick="document.getElementById('import-input').click()">⬆ Import</button>
@@ -546,16 +545,6 @@ async function loadData() {
     id: p.id || p.name || '?',
   }));
 
-  setLoader('Building city list…', 75);
-
-  // City dropdown
-  const cities = [...new Set(allPOI.map(p => p.city).filter(Boolean))].sort();
-  const sel = document.getElementById('city-filter');
-  cities.forEach(c => {
-    const o = document.createElement('option');
-    o.value = c; o.textContent = '📍 ' + c; sel.appendChild(o);
-  });
-
   document.getElementById('stat-total').textContent = allPOI.length.toLocaleString();
   setLoader('Rendering map…', 90);
 
@@ -653,11 +642,9 @@ function toggleDestroyed() {
 
 function applyFilters() {
   const visited = getVisited();
-  const city = document.getElementById('city-filter').value;
   const search = document.getElementById('search').value.trim().toUpperCase();
 
   filteredPOI = allPOI.filter(p => {
-    if (city && p.city !== city) return false;
     if (search && !(p.id || '').toUpperCase().includes(search)) return false;
     const isV = !!visited[p.id];
     if (currentFilter === 'visited' && !isV) return false;
@@ -821,23 +808,6 @@ function selectPOI(id) {
 // ─────────────────────────────────────────────────────────────
 // EVENT LISTENERS
 // ─────────────────────────────────────────────────────────────
-document.getElementById('city-filter').addEventListener('change', () => {
-  // Pan map to city centroid
-  const city = document.getElementById('city-filter').value;
-  refreshAll();
-  if (city) {
-    const pts = allPOI.filter(p => p.city === city);
-    if (pts.length) {
-      const lats = pts.map(p=>p.lat), lngs = pts.map(p=>p.lng);
-      const bounds = L.latLngBounds(
-        [Math.min(...lats), Math.min(...lngs)],
-        [Math.max(...lats), Math.max(...lngs)]
-      );
-      leafletMap.fitBounds(bounds, { padding:[40,40] });
-    }
-  }
-});
-
 document.getElementById('search').addEventListener('input', refreshAll);
 
 
