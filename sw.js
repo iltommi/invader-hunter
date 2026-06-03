@@ -1,7 +1,7 @@
 const CACHE = 'invader-hunter-v1';
 
 const PRECACHE = [
-  './invader-hunter-osm.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
