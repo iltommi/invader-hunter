@@ -405,6 +405,7 @@
   <div class="ml-auto">
     <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
+    <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
   </div>
   <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
 </div>
@@ -752,6 +753,10 @@ function buildPopup(p) {
     <button class="popup-btn" id="pbtn-${p.id}"
       style="background:${isV?'#ff8c00':'var(--green)'};color:#000;border:none">
       ${isV ? '✓ FLASHED' : '⚡ FLASH IT'}
+    </button>
+    <button class="popup-btn" id="photo-btn-${p.id}"
+      style="background:var(--purple);color:#fff;border:none;margin-top:6px">
+      📷 Photo
     </button>`;
   div.querySelector(`#pbtn-${p.id}`).addEventListener('click', () => {
     toggleVisited(p.id);
@@ -760,7 +765,80 @@ function buildPopup(p) {
     btn.style.background = isNowV ? '#ff8c00' : 'var(--green)';
     btn.textContent = isNowV ? '✓ FLASHED' : '⚡ FLASH IT';
   });
+  div.querySelector(`#photo-btn-${p.id}`).addEventListener('click', () => takePhoto(p.id));
   return div;
+}
+
+// ─────────────────────────────────────────────────────────────
+// PHOTO
+// ─────────────────────────────────────────────────────────────
+let currentPhotoPOI = null;
+
+function takePhoto(poiId) {
+  currentPhotoPOI = poiId;
+  document.getElementById('photo-input').click();
+}
+
+document.getElementById('photo-input').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file || !currentPhotoPOI) return;
+  const poi = allPOI.find(p => p.id === currentPhotoPOI);
+  currentPhotoPOI = null;
+  if (!poi) return;
+
+  await document.fonts.ready;
+  const img = await new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const i = new Image();
+    i.onload = () => { URL.revokeObjectURL(url); res(i); };
+    i.onerror = rej;
+    i.src = url;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+
+  const W = canvas.width, H = canvas.height;
+  const barH = Math.round(H * 0.09);
+  const pad   = Math.round(W * 0.025);
+
+  ctx.fillStyle = 'rgba(10,10,15,0.78)';
+  ctx.fillRect(0, H - barH, W, barH);
+
+  const idSize = Math.round(barH * 0.38);
+  ctx.font = `${idSize}px "Press Start 2P", monospace`;
+  ctx.fillStyle = '#39ff14';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText('👾 ' + poi.id, pad, H - barH / 2);
+
+  const dateStr = new Date().toLocaleDateString('en-GB');
+  ctx.font = `${Math.round(barH * 0.28)}px "Share Tech Mono", monospace`;
+  ctx.fillStyle = '#00f5ff';
+  ctx.textAlign = 'right';
+  ctx.fillText(dateStr, W - pad, H - barH / 2);
+
+  canvas.toBlob(blob => {
+    const fname = `invader_${poi.id}_${new Date().toISOString().slice(0,10)}.jpg`;
+    const f = new File([blob], fname, { type: 'image/jpeg' });
+    if (navigator.share && navigator.canShare?.({ files: [f] })) {
+      navigator.share({ files: [f], title: `Invader ${poi.id}` })
+        .catch(() => downloadBlob(blob, fname));
+    } else {
+      downloadBlob(blob, fname);
+    }
+  }, 'image/jpeg', 0.92);
+});
+
+function downloadBlob(blob, fname) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ─────────────────────────────────────────────────────────────
