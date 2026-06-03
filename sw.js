@@ -1,4 +1,4 @@
-const CACHE = 'invader-hunter-v2';
+const CACHE = 'invader-hunter-v3';
 
 const PRECACHE = [
   './index.html',
@@ -35,10 +35,25 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Always go network for map tiles and GitHub POI data
-  if (url.hostname.includes('cartocdn.com') ||
-      url.hostname.includes('raw.githubusercontent.com')) {
+  // Map tiles: always network, no caching (too many, too large)
+  if (url.hostname.includes('cartocdn.com')) {
     e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
+    return;
+  }
+
+  // POI data: stale-while-revalidate so the app works offline
+  if (url.hostname.includes('raw.githubusercontent.com')) {
+    e.respondWith(
+      caches.open(CACHE).then(cache =>
+        cache.match(e.request).then(cached => {
+          const networkUpdate = fetch(e.request).then(response => {
+            if (response.ok) cache.put(e.request, response.clone());
+            return response;
+          }).catch(() => null);
+          return cached || networkUpdate;
+        })
+      )
+    );
     return;
   }
 

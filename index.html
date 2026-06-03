@@ -614,10 +614,10 @@ function initMap() {
 // FILTERS
 // ─────────────────────────────────────────────────────────────
 const FILTER_STATES = [
-  { key: 'unvisited', label: 'Unflashed',  hideDestroyed: true  },
-  { key: 'visited',   label: 'Flashed',    hideDestroyed: true  },
-  { key: 'all',       label: 'Destroyed',  hideDestroyed: false },
-  { key: 'all',       label: 'All',        hideDestroyed: true  },
+  { key: 'unvisited',  label: 'Unflashed', hideDestroyed: true  },
+  { key: 'visited',    label: 'Flashed',   hideDestroyed: true  },
+  { key: 'destroyed',  label: 'Destroyed', hideDestroyed: false },
+  { key: 'all',        label: 'All',       hideDestroyed: true  },
 ];
 let filterIndex = 0;
 
@@ -628,8 +628,7 @@ function cycleFilter() {
   refreshAll();
 }
 
-function applyFilters() {
-  const visited = getVisited();
+function applyFilters(visited = getVisited()) {
   const search = document.getElementById('search').value.trim().toUpperCase();
   const state = FILTER_STATES[filterIndex];
 
@@ -638,7 +637,8 @@ function applyFilters() {
     const isV = !!visited[p.id];
     if (state.key === 'visited'   && !isV) return false;
     if (state.key === 'unvisited' &&  isV) return false;
-    if (state.hideDestroyed && p.status === 'destroyed') return false;
+    if (state.key === 'destroyed' && p.status !== 'destroyed') return false;
+    if (state.key !== 'destroyed' && state.hideDestroyed && p.status === 'destroyed') return false;
     return true;
   });
 }
@@ -647,14 +647,14 @@ function applyFilters() {
 // REFRESH
 // ─────────────────────────────────────────────────────────────
 function refreshAll() {
-  applyFilters();
-  updateStats();
-  renderMapMarkers();
-  renderList();
+  const visited = getVisited();
+  applyFilters(visited);
+  updateStats(visited);
+  renderMapMarkers(visited);
+  renderList(visited);
 }
 
-function updateStats() {
-  const visited = getVisited();
+function updateStats(visited = getVisited()) {
   const vc = allPOI.filter(p => visited[p.id]).length;
   const pts = allPOI.filter(p => visited[p.id]).reduce((s,p) => s + (Number(p.points)||0), 0);
   const pct = allPOI.length ? Math.round(vc / allPOI.length * 100) : 0;
@@ -685,6 +685,7 @@ function toggleDataMenu(e) {
   popup.style.top  = (rect.bottom + 6) + 'px';
   popup.style.left = (rect.right - 180) + 'px';
   popup.classList.add('open');
+  setTimeout(() => document.getElementById('search').focus(), 50);
 }
 
 function closeDataMenu() {
@@ -706,9 +707,8 @@ const STATUS_COLOR = {
   hidden:    '#bf5af2',
 };
 
-function renderMapMarkers() {
+function renderMapMarkers(visited = getVisited()) {
   if (!clusterGroup) return;
-  const visited = getVisited();
 
   clusterGroup.clearLayers();
   markerMap = {};
@@ -765,8 +765,7 @@ function buildPopup(p) {
 // ─────────────────────────────────────────────────────────────
 const STATUS_ICON = { ok:'👾', damaged:'⚠️', destroyed:'💀', hidden:'🔵' };
 
-function renderList() {
-  const visited = getVisited();
+function renderList(visited = getVisited()) {
   const list = document.getElementById('poi-list');
 
   let visible = filteredPOI;
@@ -842,7 +841,7 @@ function applyTheme() {
     }).addTo(leafletMap);
   }
 
-  if (clusterGroup) { clusterGroup.refreshClusters(); }
+  if (clusterGroup) { renderMapMarkers(); }
   if (locAccCircle) { locAccCircle.setStyle({ color: '#ff00ff', fillColor: '#ff00ff' }); }
 }
 
