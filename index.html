@@ -261,6 +261,17 @@
   .popup-body { font-family:'Share Tech Mono',monospace; min-width:160px; padding:4px 0; }
   .popup-id { font-family:'Press Start 2P',monospace; font-size:8px; color:var(--yellow); margin-bottom:8px; }
   .popup-row { font-size:11px; color:#9090a0; margin-bottom:4px; }
+  .popup-search-link {
+    display: block;
+    margin: 6px 0 4px;
+    font-size: 11px;
+    color: var(--cyan);
+    text-decoration: none;
+    font-family: 'Share Tech Mono', monospace;
+    transition: opacity .2s;
+  }
+  .popup-search-link:hover { opacity: .7; }
+
   .popup-btn {
     margin-top:10px; width:100%; padding:8px; font-family:'Press Start 2P',monospace;
     font-size:7px; border:none; cursor:pointer; border-radius:2px; transition:all .15s;
@@ -771,6 +782,7 @@ function buildPopup(p) {
     <div class="popup-row">📍 ${p.city || '–'}</div>
     <div class="popup-row" style="color:${color}">⬡ ${p.status || 'ok'}</div>
     ${p.points ? `<div class="popup-row">⭐ ${p.points} pts</div>` : ''}
+    <a class="popup-search-link" href="https://www.google.com/search?q=${encodeURIComponent(p.id + ' invader')}&tbm=isch" target="_blank" rel="noopener">🔍 Google Images</a>
     <button class="popup-btn" id="pbtn-${p.id}"
       style="background:${isV?'#ff8c00':'var(--green)'};color:${isV?'#000':'#000'};border:none">
       ${isV ? '✓ FLASHED' : '⚡ FLASH IT'}
