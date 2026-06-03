@@ -28,7 +28,6 @@
     --red: #ff2d55;
     --yellow: #ffd60a;
     --purple: #bf5af2;
-    --grey: #3a3a4a;
     --text: #e0e0f0;
   }
 
@@ -42,25 +41,8 @@
     --red: #d0002a;
     --yellow: #b07800;
     --purple: #7700cc;
-    --grey: #c0c0b8;
     --text: #1a1a1a;
   }
-
-  /* Theme toggle button */
-  #btn-theme {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 14px;
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all .2s;
-    display: flex; align-items: center; justify-content: center;
-    padding: 0; flex-shrink: 0;
-    position: sticky; right: 0;
-  }
-  #btn-theme:hover { border-color: var(--cyan); }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -74,9 +56,8 @@
     overflow: hidden;
   }
 
-  /* ── TOPBAR (merged header + controls) ── */
+  /* ── TOPBAR ── */
   .stat-val { font-family:'Press Start 2P',monospace; font-size:9px; color:var(--cyan); text-shadow:0 0 6px var(--cyan); }
-  .stat-lbl { font-size:6px; color:#606080; text-transform:uppercase; letter-spacing:0.5px; }
 
   #stat-remaining-btn {
     display:flex; flex-direction:column; align-items:center; gap:1px;
@@ -147,12 +128,9 @@
     pointer-events:none;
   }
 
-  /* Shared height/font for ALL bar controls */
-  .controls select,
+  /* Shared height/font for controls */
   .controls input,
-  .filter-btn,
-  .btn-export,
-  .btn-clear {
+  .filter-btn {
     height: 30px;
     font-family: 'Share Tech Mono', monospace;
     font-size: 11px;
@@ -162,15 +140,14 @@
     line-height: 28px;
   }
 
-  .controls select, .controls input {
+  .controls input {
     background: var(--bg);
     border: 1px solid var(--border);
     color: var(--text);
     outline: none;
     transition: border-color .2s;
   }
-  .controls select:focus, .controls input:focus { border-color: var(--cyan); }
-  .controls select { cursor: pointer; }
+  .controls input:focus { border-color: var(--cyan); }
 
   .filter-btn {
     background: transparent; border: none; color: #888;
@@ -180,20 +157,17 @@
   .filter-btn.active { color:var(--cyan); }
   .filter-btn:hover { color:var(--text); }
 
-  #data-menu-btn {
+  /* Circular icon buttons (theme toggle, gear) */
+  #btn-theme, #data-menu-btn {
     background: var(--surface); border: 1px solid var(--border); color: var(--text);
-    font-size: 16px; width: 30px; height: 30px; border-radius: 50%;
+    width: 30px; height: 30px; border-radius: 50%;
     cursor: pointer; transition: all .2s;
     display: flex; align-items: center; justify-content: center;
     padding: 0; flex-shrink: 0;
   }
-  #data-menu-btn:hover { border-color: var(--cyan); }
-
-  .btn-clear {
-    background: transparent; border: 1px solid var(--red); color: var(--red);
-    cursor: pointer; transition: all .2s;
-  }
-  .btn-clear:hover { background: rgba(255,45,85,.12); }
+  #btn-theme { font-size: 14px; position: sticky; right: 0; }
+  #data-menu-btn { font-size: 16px; }
+  #btn-theme:hover, #data-menu-btn:hover { border-color: var(--cyan); }
 
   .ml-auto { margin-left:auto; display:flex; gap:8px; }
 
@@ -214,7 +188,6 @@
   }
   .leaflet-popup-tip { background:var(--surface)!important; }
   .leaflet-popup-close-button { color:var(--cyan)!important; }
-  .leaflet-bar a { background:var(--surface)!important; color:var(--cyan)!important; border-color:var(--border)!important; }
 
   /* Cluster styles */
   .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
@@ -264,9 +237,6 @@
   .s-destroyed{ background:rgba(255,45,85,.15);  color:var(--red);    border:1px solid rgba(255,45,85,.3); }
   .s-hidden   { background:rgba(191,90,242,.15); color:var(--purple); border:1px solid rgba(191,90,242,.3); }
 
-  /* ── INFO PANEL ── */
-
-
   /* ── LOADER ── */
   #loader {
     position:fixed; inset:0; background:var(--bg); z-index:9999;
@@ -277,7 +247,7 @@
   .progress-bar { width:300px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
   .progress-fill { height:100%; background:var(--green); width:0%; transition:width .3s; box-shadow:0 0 8px var(--green); }
 
-  /* Toast */
+  /* ── TOAST ── */
   #toast {
     position:fixed; bottom:calc(24px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--surface); border:1px solid var(--green); color:var(--green);
@@ -288,25 +258,20 @@
   }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-  /* Leaflet attribution dark */
+  /* Leaflet attribution */
   .leaflet-control-attribution { background:rgba(10,10,15,.8)!important; color:#404060!important; }
   .leaflet-control-attribution a { color:#606080!important; }
 
-  /* popup content */
+  /* Map popup content */
   .popup-body { font-family:'Share Tech Mono',monospace; min-width:160px; padding:4px 0; }
   .popup-id { font-family:'Press Start 2P',monospace; font-size:8px; color:var(--yellow); margin-bottom:8px; }
   .popup-row { font-size:11px; color:#9090a0; margin-bottom:4px; }
   .popup-search-link {
-    display: block;
-    margin: 6px 0 4px;
-    font-size: 11px;
-    color: var(--cyan);
-    text-decoration: none;
-    font-family: 'Share Tech Mono', monospace;
-    transition: opacity .2s;
+    display: block; margin: 6px 0 4px; font-size: 11px;
+    color: var(--cyan); text-decoration: none;
+    font-family: 'Share Tech Mono', monospace; transition: opacity .2s;
   }
   .popup-search-link:hover { opacity: .7; }
-
   .popup-btn {
     margin-top:10px; width:100%; padding:8px; font-family:'Press Start 2P',monospace;
     font-size:7px; border:none; cursor:pointer; border-radius:2px; transition:all .15s;
@@ -400,9 +365,7 @@
     }
 
     /* Floating list button */
-    #fab-list {
-      display: flex;
-    }
+    #fab-list { display: flex; }
 
     /* Toast higher on mobile so FAB doesn't cover it */
     #toast { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
@@ -463,12 +426,11 @@
     <div class="sidebar-header" onclick="handleSidebarClick()">📡 <span class="sidebar-title">POI LIST <span id="list-count" style="color:#606080;margin-left:8px"></span></span> <span id="sheet-arrow" style="float:right;color:#606080">◀</span></div>
     <div class="poi-list" id="poi-list"></div>
   </div>
-  <!-- Locate button (always visible on map) -->
   <button id="fab-locate" onclick="toggleLocate()" title="My location">◎</button>
-
-  <!-- Floating button to open sheet on mobile -->
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
+
+<div id="toast"></div>
 
 <script>
 // ─────────────────────────────────────────────────────────────
@@ -483,7 +445,6 @@ const STORAGE_KEY = 'invader_visited_v1';
 let allPOI = [];
 let filteredPOI = [];
 let selectedId = null;
-let currentFilter = 'unvisited';
 let leafletMap = null;
 let clusterGroup = null;
 let markerMap = {};   // id → L.CircleMarker
@@ -526,20 +487,16 @@ function importJSON(event) {
   reader.onload = e => {
     try {
       const payload = JSON.parse(e.target.result);
-      // Accept both {flashed:{...}} and raw {id: timestamp} shapes
       const incoming = payload.flashed || payload;
       if (typeof incoming !== 'object' || Array.isArray(incoming))
         throw new Error('Unexpected format');
-      const existing = getVisited();
-      const merged = { ...existing, ...incoming };
-      saveVisited(merged);
+      saveVisited({ ...getVisited(), ...incoming });
       refreshAll();
       const n = Object.keys(incoming).length;
       showToast(`✓ Imported ${n} flashed invader${n !== 1 ? 's' : ''}`);
     } catch(err) {
       alert('Could not read file: ' + err.message);
     }
-    // Reset input so the same file can be re-imported if needed
     event.target.value = '';
   };
   reader.readAsText(file);
@@ -562,15 +519,12 @@ async function loadData() {
   setLoader('Parsing data…', 60);
   const raw = await res.json();
 
-  // Normalise various possible JSON shapes
   let items = Array.isArray(raw) ? raw
     : raw.invaders ? raw.invaders
     : Object.values(raw).flat();
 
-  // Coordinates use French locale comma decimals e.g. "48,8610739" → must replace , with .
   function parseCoord(v) { return parseFloat(String(v).replace(',', '.')); }
 
-  // Normalise free-text status to one of: ok, damaged, destroyed, hidden
   function normaliseStatus(s) {
     if (!s) return 'ok';
     const l = s.toLowerCase();
@@ -581,7 +535,6 @@ async function loadData() {
     return 'ok';
   }
 
-  // Keep only geolocated entries
   allPOI = items.filter(p => {
     if (!p || p.lat == null || p.lng == null) return false;
     const la = parseCoord(p.lat), lo = parseCoord(p.lng);
@@ -616,25 +569,23 @@ function initMap() {
     zoomControl: true,
   });
 
-  // Store tile layer so we can swap it on theme change
   window._tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 22,
-    maxNativeZoom: 19,  // tiles only go to 19, Leaflet upscales beyond
+    maxNativeZoom: 19,
   });
   window._tileLayer.addTo(leafletMap);
 
   clusterGroup = L.markerClusterGroup({
-    // Zoom-dependent radius: tight at street level, wider when zoomed out
     maxClusterRadius(zoom) {
-      if (zoom >= 18) return 10;   // basically only overlap if literally on top
-      if (zoom >= 16) return 20;   // one city block
-      if (zoom >= 14) return 35;   // neighbourhood
-      if (zoom >= 12) return 55;   // district
-      return 80;                   // city / country view
+      if (zoom >= 18) return 10;
+      if (zoom >= 16) return 20;
+      if (zoom >= 14) return 35;
+      if (zoom >= 12) return 55;
+      return 80;
     },
-    disableClusteringAtZoom: 20,   // at max zoom always show individual markers
+    disableClusteringAtZoom: 20,
     showCoverageOnHover: false,
     iconCreateFunction(cluster) {
       const n = cluster.getChildCount();
@@ -656,7 +607,6 @@ function initMap() {
   });
   leafletMap.addLayer(clusterGroup);
 
-  // Re-render sidebar list whenever the viewport changes
   leafletMap.on('moveend zoomend', renderList);
 }
 
@@ -674,9 +624,7 @@ let filterIndex = 0;
 function cycleFilter() {
   filterIndex = (filterIndex + 1) % FILTER_STATES.length;
   const state = FILTER_STATES[filterIndex];
-  currentFilter = state.key;
-  const btn = document.getElementById('btn-cycle');
-  btn.textContent = state.label;
+  document.getElementById('btn-cycle').textContent = state.label;
   refreshAll();
 }
 
@@ -703,10 +651,6 @@ function refreshAll() {
   updateStats();
   renderMapMarkers();
   renderList();
-  if (selectedId) {
-    const p = allPOI.find(x => x.id === selectedId);
-
-  }
 }
 
 function updateStats() {
@@ -718,9 +662,9 @@ function updateStats() {
   document.getElementById('stat-remaining').textContent       = rem;
   document.getElementById('stat-remaining-popup').textContent = rem;
   document.getElementById('stat-total').textContent           = allPOI.length.toLocaleString();
-  document.getElementById('stat-visited').textContent   = vc.toLocaleString();
-  document.getElementById('stat-points').textContent    = pts.toLocaleString();
-  document.getElementById('stat-pct').textContent       = pct + '%';
+  document.getElementById('stat-visited').textContent         = vc.toLocaleString();
+  document.getElementById('stat-points').textContent          = pts.toLocaleString();
+  document.getElementById('stat-pct').textContent             = pct + '%';
 }
 
 function toggleStatPopup(e) {
@@ -739,7 +683,7 @@ function toggleDataMenu(e) {
   if (popup.classList.contains('open')) { popup.classList.remove('open'); return; }
   const rect = document.getElementById('data-menu-btn').getBoundingClientRect();
   popup.style.top  = (rect.bottom + 6) + 'px';
-  popup.style.left = (rect.right - 130) + 'px';
+  popup.style.left = (rect.right - 180) + 'px';
   popup.classList.add('open');
 }
 
@@ -803,17 +747,14 @@ function buildPopup(p) {
     ${p.points ? `<div class="popup-row">⭐ ${p.points} pts</div>` : ''}
     <a class="popup-search-link" href="https://www.google.com/search?q=${encodeURIComponent(p.id + ' invader')}&tbm=isch" target="_blank" rel="noopener">🔍 Google Images</a>
     <button class="popup-btn" id="pbtn-${p.id}"
-      style="background:${isV?'#ff8c00':'var(--green)'};color:${isV?'#000':'#000'};border:none">
+      style="background:${isV?'#ff8c00':'var(--green)'};color:#000;border:none">
       ${isV ? '✓ FLASHED' : '⚡ FLASH IT'}
     </button>`;
   div.querySelector(`#pbtn-${p.id}`).addEventListener('click', () => {
     toggleVisited(p.id);
-    // Refresh popup button
     const isNowV = !!getVisited()[p.id];
     const btn = div.querySelector(`#pbtn-${p.id}`);
     btn.style.background = isNowV ? '#ff8c00' : 'var(--green)';
-    btn.style.color = '#000';
-    btn.style.border = 'none';
     btn.textContent = isNowV ? '✓ FLASHED' : '⚡ FLASH IT';
   });
   return div;
@@ -828,7 +769,6 @@ function renderList() {
   const visited = getVisited();
   const list = document.getElementById('poi-list');
 
-  // Clip to current map viewport
   let visible = filteredPOI;
   if (leafletMap) {
     const bounds = leafletMap.getBounds();
@@ -860,7 +800,7 @@ function renderList() {
 function escId(id) { return (id+'').replace(/'/g,"\\'"); }
 
 // ─────────────────────────────────────────────────────────────
-// SELECT + INFO PANEL
+// SELECT POI
 // ─────────────────────────────────────────────────────────────
 function selectPOI(id) {
   selectedId = id;
@@ -869,23 +809,17 @@ function selectPOI(id) {
   renderList();
 
   if (markerMap[id]) {
-    // Zoom to marker and open popup
     leafletMap.setView([p.lat, p.lng], Math.max(leafletMap.getZoom(), 16), { animate:true });
-    // Need to unspider cluster first — use a small timeout
     setTimeout(() => {
       if (markerMap[id]) markerMap[id].openPopup();
     }, 350);
   }
 }
 
-
 // ─────────────────────────────────────────────────────────────
 // EVENT LISTENERS
 // ─────────────────────────────────────────────────────────────
 document.getElementById('search').addEventListener('input', refreshAll);
-
-
-
 
 // ─────────────────────────────────────────────────────────────
 // THEME
@@ -908,13 +842,8 @@ function applyTheme() {
     }).addTo(leafletMap);
   }
 
-  // Redraw clusters with new theme colors
   if (clusterGroup) { clusterGroup.refreshClusters(); }
-
-  // Update loc dot colors
-  if (locAccCircle) {
-    locAccCircle.setStyle({ color: '#ff00ff', fillColor: '#ff00ff' });
-  }
+  if (locAccCircle) { locAccCircle.setStyle({ color: '#ff00ff', fillColor: '#ff00ff' }); }
 }
 
 function toggleTheme() {
@@ -922,9 +851,7 @@ function toggleTheme() {
   applyTheme();
 }
 
-// Apply saved theme on load
 if (isLight) document.body.classList.add('light');
-
 
 // ─────────────────────────────────────────────────────────────
 // DESKTOP SIDEBAR COLLAPSE
@@ -944,7 +871,6 @@ function toggleSidebar() {
   document.querySelector('.sidebar').classList.toggle('collapsed', sidebarCollapsed);
   document.getElementById('sheet-arrow').textContent = sidebarCollapsed ? '▶' : '◀';
   if (!sidebarCollapsed) renderList();
-  // Let Leaflet know the map size changed
   setTimeout(() => leafletMap && leafletMap.invalidateSize(), 260);
 }
 
@@ -957,11 +883,7 @@ let locWatchId = null;
 let isTracking = false;
 
 function toggleLocate() {
-  if (isTracking) {
-    stopLocate();
-  } else {
-    startLocate();
-  }
+  if (isTracking) stopLocate(); else startLocate();
 }
 
 function startLocate() {
@@ -986,15 +908,14 @@ function stopLocate() {
   locWatchId = null;
   document.getElementById('fab-locate').classList.remove('tracking');
   document.getElementById('fab-locate').textContent = '◎';
-  if (locMarker)     { locMarker.remove();     locMarker = null; }
-  if (locAccCircle)  { locAccCircle.remove();  locAccCircle = null; }
+  if (locMarker)    { locMarker.remove();    locMarker = null; }
+  if (locAccCircle) { locAccCircle.remove(); locAccCircle = null; }
 }
 
 function onLocation(pos) {
   const { latitude: lat, longitude: lng, accuracy } = pos.coords;
   const latlng = [lat, lng];
 
-  // Accuracy circle
   if (locAccCircle) {
     locAccCircle.setLatLng(latlng).setRadius(accuracy);
   } else {
@@ -1005,7 +926,6 @@ function onLocation(pos) {
     }).addTo(leafletMap);
   }
 
-  // Position dot
   if (locMarker) {
     locMarker.setLatLng(latlng);
   } else {
@@ -1016,7 +936,6 @@ function onLocation(pos) {
       iconAnchor: [8, 8],
     });
     locMarker = L.marker(latlng, { icon: dotIcon, zIndexOffset: 1000 }).addTo(leafletMap);
-    // Pan to position on first fix
     leafletMap.setView(latlng, Math.max(leafletMap.getZoom(), 16), { animate: true });
   }
 }
@@ -1028,7 +947,6 @@ function onLocationError(err) {
     3: '⚠ Location request timed out',
   };
   showToast(msgs[err.code] || '⚠ Location error');
-  // Only stop tracking on permission denied; for transient errors keep the watch alive
   if (err.code === 1) stopLocate();
 }
 
@@ -1038,20 +956,41 @@ function onLocationError(err) {
 let sheetOpen = false;
 
 function toggleSheet() {
-  if (window.innerWidth > 640) return; // desktop: sidebar always visible
+  if (window.innerWidth > 640) return;
   sheetOpen = !sheetOpen;
   document.querySelector('.sidebar').classList.toggle('open', sheetOpen);
-  document.getElementById('sheet-arrow').textContent = sheetOpen ? '▼' : '▲'; // mobile only
+  document.getElementById('sheet-arrow').textContent = sheetOpen ? '▼' : '▲';
   document.getElementById('fab-list').style.display = sheetOpen ? 'none' : 'flex';
   if (sheetOpen) renderList();
 }
 
-// Close sheet when user taps the map
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('map').addEventListener('click', () => {
-    if (sheetOpen && window.innerWidth <= 640) toggleSheet(); // mobile only
+    if (sheetOpen && window.innerWidth <= 640) toggleSheet();
   });
 });
+
+// ─────────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────────
+function showToast(msg, duration=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ─────────────────────────────────────────────────────────────
+// SERVICE WORKER
+// ─────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(e => console.warn('SW failed:', e));
+  });
+}
 
 // ─────────────────────────────────────────────────────────────
 // BOOT
@@ -1061,26 +1000,6 @@ loadData().catch(err => {
   document.getElementById('loader-bar').style.background = 'var(--red)';
   document.getElementById('loader-bar').style.width = '100%';
 });
-</script>
-<div id="toast"></div>
-
-<script>
-function showToast(msg, duration=2500) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), duration);
-}
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('SW registered'))
-      .catch(e => console.warn('SW failed:', e));
-  });
-}
 </script>
 </body>
 </html>
