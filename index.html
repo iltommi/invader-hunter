@@ -74,10 +74,31 @@
   }
 
   /* ── TOPBAR (merged header + controls) ── */
-  .stats { display:flex; gap:10px; align-items:center; flex-shrink:0; }
-  .stat { display:flex; flex-direction:column; align-items:center; gap:1px; }
   .stat-val { font-family:'Press Start 2P',monospace; font-size:9px; color:var(--cyan); text-shadow:0 0 6px var(--cyan); }
   .stat-lbl { font-size:6px; color:#606080; text-transform:uppercase; letter-spacing:0.5px; }
+
+  #stat-remaining-btn {
+    display:flex; flex-direction:column; align-items:center; gap:1px;
+    cursor:pointer; flex-shrink:0;
+    padding: 2px 6px; border-radius:2px; transition:background .15s;
+  }
+  #stat-remaining-btn:hover { background:rgba(0,245,255,.08); }
+
+  #stat-popup {
+    display:none; position:fixed;
+    background:var(--surface); border:1px solid var(--cyan);
+    border-radius:2px; padding:10px 14px; z-index:500;
+    min-width:150px; box-shadow:0 4px 20px rgba(0,245,255,.2);
+    font-family:'Share Tech Mono',monospace;
+  }
+  #stat-popup.open { display:block; }
+  .stat-popup-row {
+    display:flex; justify-content:space-between; gap:16px;
+    padding:3px 0; font-size:11px; color:#9090a0;
+  }
+  .stat-popup-row span:last-child {
+    font-family:'Press Start 2P',monospace; font-size:7px; color:var(--text);
+  }
 
   .topbar-sep { width:1px; height:20px; background:var(--border); flex-shrink:0; }
 
@@ -373,24 +394,17 @@
   <div class="progress-bar"><div class="progress-fill" id="loader-bar"></div></div>
 </div>
 
+<div id="stat-popup">
+  <div class="stat-popup-row"><span>Total</span><span id="stat-total">–</span></div>
+  <div class="stat-popup-row"><span>Flashed</span><span id="stat-visited" style="color:var(--green)">0</span></div>
+  <div class="stat-popup-row"><span>Points</span><span id="stat-points" style="color:var(--yellow)">0</span></div>
+  <div class="stat-popup-row"><span>Done</span><span id="stat-pct" style="color:var(--purple)">0%</span></div>
+</div>
+
 <div class="controls">
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-val" id="stat-total">–</div>
-      <div class="stat-lbl">Total</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val" id="stat-visited" style="color:var(--green);text-shadow:0 0 8px var(--green)">0</div>
-      <div class="stat-lbl">Flash</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val" id="stat-points" style="color:var(--yellow);text-shadow:0 0 8px var(--yellow)">0</div>
-      <div class="stat-lbl">Pts</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val" id="stat-pct" style="color:var(--purple);text-shadow:0 0 8px var(--purple)">0%</div>
-      <div class="stat-lbl">Done</div>
-    </div>
+  <div id="stat-remaining-btn" onclick="toggleStatPopup(event)" title="Tap for details">
+    <div class="stat-val" id="stat-remaining">–</div>
+    <div class="stat-lbl">Remaining ▾</div>
   </div>
   <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   <div class="topbar-sep"></div>
@@ -545,7 +559,6 @@ async function loadData() {
     id: p.id || p.name || '?',
   }));
 
-  document.getElementById('stat-total').textContent = allPOI.length.toLocaleString();
   setLoader('Rendering map…', 90);
 
   initMap();
@@ -673,10 +686,26 @@ function updateStats() {
   const vc = allPOI.filter(p => visited[p.id]).length;
   const pts = allPOI.filter(p => visited[p.id]).reduce((s,p) => s + (Number(p.points)||0), 0);
   const pct = allPOI.length ? Math.round(vc / allPOI.length * 100) : 0;
-  document.getElementById('stat-visited').textContent = vc.toLocaleString();
-  document.getElementById('stat-points').textContent  = pts.toLocaleString();
-  document.getElementById('stat-pct').textContent     = pct + '%';
+  document.getElementById('stat-remaining').textContent = (allPOI.length - vc).toLocaleString();
+  document.getElementById('stat-total').textContent     = allPOI.length.toLocaleString();
+  document.getElementById('stat-visited').textContent   = vc.toLocaleString();
+  document.getElementById('stat-points').textContent    = pts.toLocaleString();
+  document.getElementById('stat-pct').textContent       = pct + '%';
 }
+
+function toggleStatPopup(e) {
+  e.stopPropagation();
+  const popup = document.getElementById('stat-popup');
+  if (popup.classList.contains('open')) { popup.classList.remove('open'); return; }
+  const rect = document.getElementById('stat-remaining-btn').getBoundingClientRect();
+  popup.style.top  = (rect.bottom + 6) + 'px';
+  popup.style.left = rect.left + 'px';
+  popup.classList.add('open');
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('stat-popup').classList.remove('open');
+});
 
 // ─────────────────────────────────────────────────────────────
 // MAP MARKERS
