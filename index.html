@@ -103,10 +103,17 @@
   #data-popup {
     display:none; position:fixed;
     background:var(--surface); border:1px solid var(--border);
-    border-radius:2px; z-index:2000; min-width:130px;
+    border-radius:2px; z-index:2000; min-width:180px;
     box-shadow:0 4px 20px rgba(0,0,0,.3);
     font-family:'Share Tech Mono',monospace; overflow:hidden;
   }
+  #data-popup input[type="text"] {
+    width:100%; background:var(--bg); border:1px solid var(--border);
+    color:var(--text); height:28px; padding:0 8px;
+    font-family:'Share Tech Mono',monospace; font-size:11px;
+    border-radius:2px; outline:none; box-sizing:border-box;
+  }
+  #data-popup input[type="text"]:focus { border-color:var(--cyan); }
   #data-popup.open { display:block; }
   .data-menu-item {
     padding:9px 14px; font-size:11px; cursor:pointer;
@@ -425,7 +432,6 @@
   <div class="topbar-sep"></div>
   <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">🔴 Unflashed</button>
   <div class="ml-auto">
-    <input type="text" id="search" placeholder="Search ID…" style="width:160px">
     <button class="btn-export" id="data-menu-btn" onclick="toggleDataMenu(event)">⚙ ▾</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
     <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
@@ -433,6 +439,10 @@
 </div>
 
 <div id="data-popup">
+  <div style="padding:8px 10px">
+    <input type="text" id="search" placeholder="Search ID…" onclick="event.stopPropagation()">
+  </div>
+  <div style="height:1px;background:var(--border)"></div>
   <div class="data-menu-item" onclick="exportJSON();closeDataMenu()">⬇ Export</div>
   <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
   <div class="data-menu-item data-menu-danger" onclick="if(confirm('Reset all flashed mosaics?')){clearVisited();closeDataMenu()}">⟳ Reset</div>
