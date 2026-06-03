@@ -100,6 +100,22 @@
     font-family:'Press Start 2P',monospace; font-size:7px; color:var(--text);
   }
 
+  #data-popup {
+    display:none; position:fixed;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:2px; z-index:500; min-width:130px;
+    box-shadow:0 4px 20px rgba(0,0,0,.3);
+    font-family:'Share Tech Mono',monospace; overflow:hidden;
+  }
+  #data-popup.open { display:block; }
+  .data-menu-item {
+    padding:9px 14px; font-size:11px; cursor:pointer;
+    color:var(--text); transition:background .15s;
+  }
+  .data-menu-item:hover { background:rgba(0,245,255,.08); color:var(--cyan); }
+  .data-menu-danger { color:var(--red); }
+  .data-menu-danger:hover { background:rgba(255,45,85,.08); color:var(--red); }
+
   .topbar-sep { width:1px; height:20px; background:var(--border); flex-shrink:0; }
 
   /* ── CONTROLS ── */
@@ -412,11 +428,15 @@
   <button class="filter-btn active" id="btn-hide-destroyed" onclick="toggleDestroyed()" title="Show/hide destroyed">💀 <span style="text-decoration:line-through;opacity:.5">👁</span></button>
   <div class="ml-auto">
     <input type="text" id="search" placeholder="Search ID…" style="width:160px">
-    <button class="btn-export" onclick="exportJSON()">⬇ Export</button>
-    <button class="btn-export" style="border-color:var(--cyan);color:var(--cyan)" onclick="document.getElementById('import-input').click()">⬆ Import</button>
+    <button class="btn-export" id="data-menu-btn" onclick="toggleDataMenu(event)">⚙ ▾</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
-    <button class="btn-clear"  onclick="if(confirm('Reset all flashed mosaics?'))clearVisited()">⟳ Reset</button>
   </div>
+</div>
+
+<div id="data-popup">
+  <div class="data-menu-item" onclick="exportJSON();closeDataMenu()">⬇ Export</div>
+  <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
+  <div class="data-menu-item data-menu-danger" onclick="if(confirm('Reset all flashed mosaics?')){clearVisited();closeDataMenu()}">⟳ Reset</div>
 </div>
 
 <div class="main">
@@ -703,8 +723,23 @@ function toggleStatPopup(e) {
   popup.classList.add('open');
 }
 
+function toggleDataMenu(e) {
+  e.stopPropagation();
+  const popup = document.getElementById('data-popup');
+  if (popup.classList.contains('open')) { popup.classList.remove('open'); return; }
+  const rect = document.getElementById('data-menu-btn').getBoundingClientRect();
+  popup.style.top  = (rect.bottom + 6) + 'px';
+  popup.style.left = (rect.right - 130) + 'px';
+  popup.classList.add('open');
+}
+
+function closeDataMenu() {
+  document.getElementById('data-popup').classList.remove('open');
+}
+
 document.addEventListener('click', () => {
   document.getElementById('stat-popup').classList.remove('open');
+  document.getElementById('data-popup').classList.remove('open');
 });
 
 // ─────────────────────────────────────────────────────────────
