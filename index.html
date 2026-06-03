@@ -173,18 +173,21 @@
   .controls select { cursor: pointer; }
 
   .filter-btn {
-    background: transparent; border: 1px solid var(--border); color: #888;
-    cursor: pointer; transition: all .2s;
+    background: transparent; border: none; color: #888;
+    cursor: pointer; transition: all .2s; font-size: 13px;
   }
-  #btn-cycle { min-width: 120px; }
-  .filter-btn.active { border-color:var(--cyan); color:var(--cyan); background:rgba(0,245,255,.08); }
-  .filter-btn:hover { border-color:#888; color:var(--text); }
+  #btn-cycle { min-width: 80px; }
+  .filter-btn.active { color:var(--cyan); }
+  .filter-btn:hover { color:var(--text); }
 
-  .btn-export {
-    background: transparent; border: 1px solid var(--purple); color: var(--purple);
+  #data-menu-btn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    font-size: 16px; width: 30px; height: 30px; border-radius: 50%;
     cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0; flex-shrink: 0;
   }
-  .btn-export:hover { background: rgba(191,90,242,.12); }
+  #data-menu-btn:hover { border-color: var(--cyan); }
 
   .btn-clear {
     background: transparent; border: 1px solid var(--red); color: var(--red);
@@ -434,9 +437,9 @@
     <div class="stat-val" id="stat-remaining">–</div>
   </div>
   <div class="topbar-sep"></div>
-  <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">🔴 Unflashed</button>
+  <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">Unflashed</button>
   <div class="ml-auto">
-    <button class="btn-export" id="data-menu-btn" onclick="toggleDataMenu(event)">⚙ ▾</button>
+    <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
   </div>
   <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
@@ -661,10 +664,10 @@ function initMap() {
 // FILTERS
 // ─────────────────────────────────────────────────────────────
 const FILTER_STATES = [
-  { key: 'unvisited', label: '🔴 Unflashed',  hideDestroyed: true  },
-  { key: 'visited',   label: '🟠 Flashed',     hideDestroyed: true  },
-  { key: 'all',       label: '💀 Destroyed',   hideDestroyed: false },
-  { key: 'all',       label: '👁 All',         hideDestroyed: true  },
+  { key: 'unvisited', label: 'Unflashed',  hideDestroyed: true  },
+  { key: 'visited',   label: 'Flashed',    hideDestroyed: true  },
+  { key: 'all',       label: 'Destroyed',  hideDestroyed: false },
+  { key: 'all',       label: 'All',        hideDestroyed: true  },
 ];
 let filterIndex = 0;
 
