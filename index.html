@@ -586,28 +586,10 @@ async function loadData() {
   initMap();
   refreshAll();
 
-  setLoader('Locating you…', 95);
+  setLoader('Ready!', 100);
+  setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 400);
 
-  // Auto-start location on launch and pan to user
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        setLoader('Ready!', 100);
-        setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 400);
-        startLocate();
-        leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 15, { animate: false });
-      },
-      () => {
-        // Permission denied or unavailable — just open normally
-        setLoader('Ready!', 100);
-        setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 400);
-      },
-      { enableHighAccuracy: true, timeout: 6000 }
-    );
-  } else {
-    setLoader('Ready!', 100);
-    setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 400);
-  }
+  startLocate();
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -859,26 +841,6 @@ function selectPOI(id) {
   }
 }
 
-function renderInfoPanel(p) {
-
-  const visited = getVisited();
-  const isV = !!visited[p.id];
-  const vDate = visited[p.id] ? new Date(visited[p.id]).toLocaleDateString() : null;
-  const color = STATUS_COLOR[p.status] || '#39ff14';
-
-  const el = document.getElementById('info-panel');
-  el.className = 'info-panel';
-  el.innerHTML = `
-    <div class="info-id">${p.id}</div>
-    <div class="info-row"><span>City</span><span>${p.city || '–'}</span></div>
-    <div class="info-row"><span>Status</span><span style="color:${color}">${p.status}</span></div>
-    <div class="info-row"><span>Points</span><span style="color:var(--yellow)">${p.points || '–'}</span></div>
-    <div class="info-row"><span>Coords</span><span style="font-size:10px">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</span></div>
-    ${vDate ? `<div class="info-row"><span>Flashed</span><span style="color:var(--green)">${vDate}</span></div>` : ''}
-    <button class="btn-visit ${isV?'visited-btn':'unvisited'}" onclick="toggleVisited('${escId(p.id)}')">
-      ${isV ? '✓ FLASHED' : '⚡ MARK AS FLASHED'}
-    </button>`;
-}
 
 // ─────────────────────────────────────────────────────────────
 // EVENT LISTENERS
@@ -994,7 +956,7 @@ function startLocate() {
   locWatchId = navigator.geolocation.watchPosition(
     onLocation,
     onLocationError,
-    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+    { enableHighAccuracy: true, maximumAge: 5000 }
   );
 }
 
@@ -1046,7 +1008,8 @@ function onLocationError(err) {
     3: '⚠ Location request timed out',
   };
   showToast(msgs[err.code] || '⚠ Location error');
-  stopLocate();
+  // Only stop tracking on permission denied; for transient errors keep the watch alive
+  if (err.code === 1) stopLocate();
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1070,9 +1033,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Auto-open sheet on mobile when a POI is selected from map
-const _origRenderInfoPanel = renderInfoPanel;
-
 // ─────────────────────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────────────────────
@@ -1082,12 +1042,7 @@ loadData().catch(err => {
   document.getElementById('loader-bar').style.width = '100%';
 });
 </script>
-<div id="toast">  <!-- Locate button (always visible on map) -->
-  <button id="fab-locate" onclick="toggleLocate()" title="My location">◎</button>
-
-  <!-- Floating button to open sheet on mobile -->
-  <button id="fab-list" onclick="toggleSheet()">≡</button>
-</div>
+<div id="toast"></div>
 
 <script>
 function showToast(msg, duration=2500) {
