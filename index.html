@@ -822,16 +822,18 @@ document.getElementById('photo-input').addEventListener('change', async e => {
   ctx.textAlign = 'right';
   ctx.fillText(dateStr, W - pad, H - barH / 2);
 
-  canvas.toBlob(blob => {
-    const fname = `invader_${poi.id}_${new Date().toISOString().slice(0,10)}.jpg`;
-    const f = new File([blob], fname, { type: 'image/jpeg' });
-    if (navigator.share && navigator.canShare?.({ files: [f] })) {
-      navigator.share({ files: [f], title: `Invader ${poi.id}` })
-        .catch(() => downloadBlob(blob, fname));
-    } else {
-      downloadBlob(blob, fname);
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+  const fname = `invader_${poi.id}_${new Date().toISOString().slice(0,10)}.jpg`;
+  const f = new File([blob], fname, { type: 'image/jpeg' });
+  if (navigator.share) {
+    try {
+      await navigator.share({ files: [f], title: `Invader ${poi.id}` });
+    } catch (err) {
+      if (err.name !== 'AbortError') downloadBlob(blob, fname);
     }
-  }, 'image/jpeg', 0.92);
+  } else {
+    downloadBlob(blob, fname);
+  }
 });
 
 function downloadBlob(blob, fname) {
