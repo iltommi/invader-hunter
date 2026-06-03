@@ -48,7 +48,7 @@
 
   /* Theme toggle button */
   #btn-theme {
-    background: transparent;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     font-size: 14px;
@@ -58,6 +58,7 @@
     transition: all .2s;
     display: flex; align-items: center; justify-content: center;
     padding: 0; flex-shrink: 0;
+    position: sticky; right: 0;
   }
   #btn-theme:hover { border-color: var(--cyan); }
 
@@ -434,8 +435,8 @@
   <div class="ml-auto">
     <button class="btn-export" id="data-menu-btn" onclick="toggleDataMenu(event)">⚙ ▾</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
-    <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   </div>
+  <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
 </div>
 
 <div id="data-popup">
