@@ -168,7 +168,7 @@
     background: transparent; border: 1px solid var(--border); color: #888;
     cursor: pointer; transition: all .2s;
   }
-  #btn-cycle { min-width: 108px; }
+  #btn-cycle { min-width: 120px; }
   .filter-btn.active { border-color:var(--cyan); color:var(--cyan); background:rgba(0,245,255,.08); }
   .filter-btn:hover { border-color:#888; color:var(--text); }
 
@@ -425,7 +425,6 @@
   <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   <div class="topbar-sep"></div>
   <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">🔴 Unflashed</button>
-  <button class="filter-btn active" id="btn-hide-destroyed" onclick="toggleDestroyed()" title="Show/hide destroyed">💀 <span style="text-decoration:line-through;opacity:.5">👁</span></button>
   <div class="ml-auto">
     <input type="text" id="search" placeholder="Search ID…" style="width:160px">
     <button class="btn-export" id="data-menu-btn" onclick="toggleDataMenu(event)">⚙ ▾</button>
@@ -468,7 +467,6 @@ let allPOI = [];
 let filteredPOI = [];
 let selectedId = null;
 let currentFilter = 'unvisited';
-let hideDestroyed = true;
 let leafletMap = null;
 let clusterGroup = null;
 let markerMap = {};   // id → L.CircleMarker
@@ -649,11 +647,12 @@ function initMap() {
 // FILTERS
 // ─────────────────────────────────────────────────────────────
 const FILTER_STATES = [
-  { key: 'all',       label: '👁 All' },
-  { key: 'unvisited', label: '🔴 Unflashed' },
-  { key: 'visited',   label: '🟠 Flashed' },
+  { key: 'unvisited', label: '🔴 Unflashed',  hideDestroyed: true  },
+  { key: 'all',       label: '👁 All',         hideDestroyed: true  },
+  { key: 'all',       label: '💀 +Destroyed',  hideDestroyed: false },
+  { key: 'visited',   label: '🟠 Flashed',     hideDestroyed: true  },
 ];
-let filterIndex = 1;
+let filterIndex = 0;
 
 function cycleFilter() {
   filterIndex = (filterIndex + 1) % FILTER_STATES.length;
@@ -661,28 +660,20 @@ function cycleFilter() {
   currentFilter = state.key;
   const btn = document.getElementById('btn-cycle');
   btn.textContent = state.label;
-  btn.classList.toggle('active', filterIndex !== 0);
-  refreshAll();
-}
-
-function toggleDestroyed() {
-  hideDestroyed = !hideDestroyed;
-  const btn = document.getElementById('btn-hide-destroyed');
-  btn.classList.toggle('active', hideDestroyed);
-  btn.innerHTML = hideDestroyed ? '💀 <span style="text-decoration:line-through;opacity:.5">👁</span>' : '💀 👁';
   refreshAll();
 }
 
 function applyFilters() {
   const visited = getVisited();
   const search = document.getElementById('search').value.trim().toUpperCase();
+  const state = FILTER_STATES[filterIndex];
 
   filteredPOI = allPOI.filter(p => {
     if (search && !(p.id || '').toUpperCase().includes(search)) return false;
     const isV = !!visited[p.id];
-    if (currentFilter === 'visited' && !isV) return false;
-    if (currentFilter === 'unvisited' && isV) return false;
-    if (hideDestroyed && p.status === 'destroyed') return false;
+    if (state.key === 'visited'   && !isV) return false;
+    if (state.key === 'unvisited' &&  isV) return false;
+    if (state.hideDestroyed && p.status === 'destroyed') return false;
     return true;
   });
 }
