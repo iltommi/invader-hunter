@@ -238,6 +238,28 @@
   .s-destroyed{ background:rgba(255,45,85,.15);  color:var(--red);    border:1px solid rgba(255,45,85,.3); }
   .s-hidden   { background:rgba(191,90,242,.15); color:var(--purple); border:1px solid rgba(191,90,242,.3); }
 
+  /* ── PHOTO MODAL ── */
+  #photo-modal {
+    display:none; position:fixed; inset:0; z-index:9000;
+    background:rgba(0,0,0,.85);
+    flex-direction:column; align-items:center; justify-content:center; gap:16px;
+    padding:16px;
+  }
+  #photo-modal.open { display:flex; }
+  #photo-preview {
+    max-width:100%; max-height:70vh;
+    border:1px solid var(--cyan); border-radius:2px;
+    object-fit:contain;
+  }
+  #photo-modal-actions { display:flex; gap:12px; }
+  #photo-modal-actions button {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 16px; border:none; border-radius:2px; cursor:pointer;
+  }
+  #photo-share-btn    { background:var(--cyan);   color:#000; }
+  #photo-download-btn { background:var(--green);  color:#000; }
+  #photo-close-btn    { background:transparent; color:#888; border:1px solid #444 !important; }
+
   /* ── LOADER ── */
   #loader {
     position:fixed; inset:0; background:var(--bg); z-index:9999;
@@ -381,6 +403,15 @@
 </style>
 </head>
 <body>
+
+<div id="photo-modal">
+  <img id="photo-preview" alt="">
+  <div id="photo-modal-actions">
+    <button id="photo-share-btn">⬆ Share</button>
+    <button id="photo-download-btn">⬇ Save</button>
+    <button id="photo-close-btn">✕ Close</button>
+  </div>
+</div>
 
 <div id="loader">
   <div class="loader-title">👾 INVADER HUNTER</div>
@@ -773,6 +804,8 @@ function buildPopup(p) {
 // PHOTO
 // ─────────────────────────────────────────────────────────────
 let currentPhotoPOI = null;
+let currentPhotoBlob = null;
+let currentPhotoFname = null;
 
 function takePhoto(poiId) {
   currentPhotoPOI = poiId;
@@ -822,19 +855,37 @@ document.getElementById('photo-input').addEventListener('change', async e => {
   ctx.textAlign = 'right';
   ctx.fillText(dateStr, W - pad, H - barH / 2);
 
-  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
-  const fname = `invader_${poi.id}_${new Date().toISOString().slice(0,10)}.jpg`;
-  const f = new File([blob], fname, { type: 'image/jpeg' });
-  if (navigator.share) {
-    try {
-      await navigator.share({ files: [f], title: `Invader ${poi.id}` });
-    } catch (err) {
-      if (err.name !== 'AbortError') downloadBlob(blob, fname);
-    }
-  } else {
-    downloadBlob(blob, fname);
+  currentPhotoBlob  = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+  currentPhotoFname = `invader_${poi.id}_${new Date().toISOString().slice(0,10)}.jpg`;
+
+  const previewUrl = URL.createObjectURL(currentPhotoBlob);
+  document.getElementById('photo-preview').src = previewUrl;
+  document.getElementById('photo-modal').classList.add('open');
+});
+
+document.getElementById('photo-share-btn').addEventListener('click', async () => {
+  if (!currentPhotoBlob) return;
+  const f = new File([currentPhotoBlob], currentPhotoFname, { type: 'image/jpeg' });
+  try {
+    await navigator.share({ files: [f], title: currentPhotoFname });
+  } catch (err) {
+    if (err.name !== 'AbortError') downloadBlob(currentPhotoBlob, currentPhotoFname);
   }
 });
+
+document.getElementById('photo-download-btn').addEventListener('click', () => {
+  if (currentPhotoBlob) downloadBlob(currentPhotoBlob, currentPhotoFname);
+});
+
+document.getElementById('photo-close-btn').addEventListener('click', () => {
+  document.getElementById('photo-modal').classList.remove('open');
+  URL.revokeObjectURL(document.getElementById('photo-preview').src);
+  document.getElementById('photo-preview').src = '';
+  currentPhotoBlob = currentPhotoFname = null;
+});
+
+// Hide share button if Web Share API unavailable
+if (!navigator.share) document.getElementById('photo-share-btn').style.display = 'none';
 
 function downloadBlob(blob, fname) {
   const url = URL.createObjectURL(blob);
