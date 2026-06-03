@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>👾 Invader Hunter</title>
 <link rel="manifest" href="./manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
@@ -273,7 +273,7 @@
 
   /* Toast */
   #toast {
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    position:fixed; bottom:calc(24px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--surface); border:1px solid var(--green); color:var(--green);
     font-family:'Press Start 2P',monospace; font-size:8px; padding:10px 20px;
     border-radius:2px; box-shadow:0 0 20px rgba(57,255,20,.3);
@@ -309,7 +309,7 @@
   /* ── LOCATION ── */
   #fab-locate {
     position: absolute;
-    bottom: 20px; left: 16px; z-index: 999;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 16px; z-index: 999;
     background: var(--surface); border: 2px solid var(--green); color: var(--green);
     font-family: 'Press Start 2P', monospace; font-size: 12px;
     width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
@@ -321,7 +321,7 @@
 
   #fab-list {
     position: absolute;
-    bottom: 20px; right: 16px; z-index: 999;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: 16px; z-index: 999;
     background: var(--surface); border: 2px solid var(--cyan); color: var(--cyan);
     font-family: 'Press Start 2P', monospace; font-size: 12px;
     width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
@@ -399,7 +399,7 @@
     }
 
     /* Toast higher on mobile so FAB doesn't cover it */
-    #toast { bottom: 80px; }
+    #toast { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
   }
 
   @media (min-width: 641px) {
