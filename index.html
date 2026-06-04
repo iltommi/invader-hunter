@@ -501,6 +501,7 @@
   <div class="topbar-sep"></div>
   <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">Unflashed</button>
   <div class="ml-auto">
+    <button id="toolbar-photo-btn" onclick="takePhoto()" title="Take photo">📷</button>
     <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
     <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
@@ -934,7 +935,6 @@ function buildPopup(p) {
     </a>
     <div class="popup-actions">
       <button class="popup-action" id="pbtn-${p.id}" title="${isV?'Flashed':'Flash it'}">${isV?'✅':'⚡'}</button>
-      <button class="popup-action" id="photo-btn-${p.id}" title="Photo">📷</button>
       <a class="popup-action" href="https://www.google.com/search?q=${encodeURIComponent(p.id+' invader')}&tbm=isch" target="_blank" rel="noopener" title="Google Images">🔍</a>
     </div>`;
   div.querySelector(`#pbtn-${p.id}`).addEventListener('click', () => {
@@ -944,7 +944,6 @@ function buildPopup(p) {
     btn.textContent = isNowV ? '✅' : '⚡';
     btn.title = isNowV ? 'Flashed' : 'Flash it';
   });
-  div.querySelector(`#photo-btn-${p.id}`).addEventListener('click', () => takePhoto(p.id));
   return div;
 }
 
@@ -1148,7 +1147,7 @@ let currentPhotoPOI = null;
 let currentPhotoBlob = null;
 let currentPhotoFname = null;
 
-function takePhoto(poiId) {
+function takePhoto(poiId = null) {
   currentPhotoPOI = poiId;
   document.getElementById('photo-input').click();
 }
@@ -1159,10 +1158,9 @@ let _capturedPOI = null;
 document.getElementById('photo-input').addEventListener('change', async e => {
   const file = e.target.files[0];
   e.target.value = '';
-  if (!file || !currentPhotoPOI) return;
-  _capturedPOI    = allPOI.find(p => p.id === currentPhotoPOI);
+  if (!file) return;
+  _capturedPOI    = currentPhotoPOI ? allPOI.find(p => p.id === currentPhotoPOI) : null;
   currentPhotoPOI = null;
-  if (!_capturedPOI) return;
 
   await document.fonts.ready;
   _capturedImg = await new Promise((res, rej) => {
@@ -1179,7 +1177,6 @@ document.getElementById('photo-input').addEventListener('change', async e => {
 
 async function showPhotoModal() {
   const poi = _capturedPOI;
-  if (!poi) return;
 
   const canvas = document.createElement('canvas');
   const ctx    = canvas.getContext('2d');
@@ -1211,7 +1208,7 @@ async function showPhotoModal() {
   ctx.fillStyle = '#39ff14';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
-  ctx.fillText('👾 ' + poi.id, pad, H - barH / 2);
+  ctx.fillText('👾 ' + (poi ? poi.id : '?'), pad, H - barH / 2);
 
   const dateStr = new Date().toLocaleDateString('en-GB');
   ctx.font = `${Math.round(barH * 0.28)}px "Share Tech Mono", monospace`;
@@ -1219,8 +1216,9 @@ async function showPhotoModal() {
   ctx.textAlign = 'right';
   ctx.fillText(dateStr, W - pad, H - barH / 2);
 
+  const dateSlug = new Date().toISOString().slice(0, 10);
   currentPhotoBlob  = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
-  currentPhotoFname = `invader_${poi.id}_${new Date().toISOString().slice(0,10)}.jpg`;
+  currentPhotoFname = poi ? `invader_${poi.id}_${dateSlug}.jpg` : `invader_${dateSlug}.jpg`;
 
   const previewUrl = URL.createObjectURL(currentPhotoBlob);
   document.getElementById('photo-preview').src = previewUrl;
