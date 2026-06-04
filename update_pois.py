@@ -26,8 +26,9 @@ GITHUB_URL   = 'https://raw.githubusercontent.com/goguelnikov/SpaceInvaders/main
 OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
 OVERPASS_Q   = '[out:json][timeout:120];\nnode["artist_name"="Invader"];\nout body;'
 
-SPOTTER_FILE = Path('spotter_pois.json')
-OUTPUT_FILE  = Path('world_invaders.json')
+SPOTTER_FILE   = Path('spotter_pois.json')
+CITY_NAMES_FILE = Path('city_names.json')
+OUTPUT_FILE    = Path('world_invaders.json')
 
 CITY_WAIT  = 4   # seconds after envoi()
 PAGE_WAIT  = 3   # seconds after changepage()
@@ -91,6 +92,7 @@ def make_driver(headless):
     return webdriver.Chrome(options=opts)
 
 def get_city_codes(driver):
+    """Returns list of (code, name) tuples."""
     driver.get(SPOTTER_BASE)
     time.sleep(2)
     links = driver.find_elements(By.XPATH, "//a[contains(@href,'envoi(')]")
@@ -98,7 +100,7 @@ def get_city_codes(driver):
     for l in links:
         m = re.search(r'envoi\("([^"]+)"\)', l.get_attribute('href') or '')
         if m:
-            codes.append(m.group(1))
+            codes.append((m.group(1), l.text.strip()))
     return codes
 
 def parse_spotter_page(html):
@@ -120,12 +122,14 @@ def total_from_page(html):
 def scrape_spotter(headless):
     print('\n── Step 1: scraping invader-spotter.art ──')
     driver = make_driver(headless)
-    all_pois = []
+    all_pois  = []
+    city_names = {}   # code → full name
     try:
         codes = get_city_codes(driver)
         print(f'  {len(codes)} cities found')
-        for i, code in enumerate(codes, 1):
-            print(f'  [{i:2d}/{len(codes)}] {code}…', end=' ', flush=True)
+        for i, (code, name) in enumerate(codes, 1):
+            city_names[code] = name
+            print(f'  [{i:2d}/{len(codes)}] {name} ({code})…', end=' ', flush=True)
             try:
                 driver.get(SPOTTER_BASE)
                 time.sleep(1)
@@ -140,7 +144,7 @@ def scrape_spotter(headless):
                     time.sleep(PAGE_WAIT)
                     entries += parse_spotter_page(driver.page_source)
                 for e in entries:
-                    e['city'] = code
+                    e['city'] = name
                 all_pois.extend(entries)
                 print(f'{len(entries)} POIs')
             except Exception as ex:
@@ -149,8 +153,9 @@ def scrape_spotter(headless):
         driver.quit()
 
     SPOTTER_FILE.write_text(json.dumps(all_pois, indent=2, ensure_ascii=False))
+    CITY_NAMES_FILE.write_text(json.dumps(city_names, indent=2, ensure_ascii=False))
     print(f'  → {len(all_pois)} total POIs saved to {SPOTTER_FILE}')
-    return all_pois
+    return all_pois, city_names
 
 # ── step 2: fetch OSM coordinates ────────────────────────────────────────────
 
@@ -189,7 +194,7 @@ def fetch_github():
 
 # ── step 4: merge ─────────────────────────────────────────────────────────────
 
-def merge(spotter, osm, github):
+def merge(spotter, osm, github, city_names):
     print('\n── Step 4: merging ──')
     result   = []
     no_coord = []
@@ -214,8 +219,10 @@ def merge(spotter, osm, github):
     spotter_ids = {p['id'] for p in spotter}
     for pid, gh in github.items():
         if pid not in spotter_ids:
-            result.append({'id': pid, 'city': '', 'status': gh['status'],
-                           'points': gh['points'], 'lat': gh['lat'], 'lng': gh['lng']})
+            code = pid.split('_')[0]
+            result.append({'id': pid, 'city': city_names.get(code, code),
+                           'status': gh['status'], 'points': gh['points'],
+                           'lat': gh['lat'], 'lng': gh['lng']})
 
     OUTPUT_FILE.write_text(json.dumps(result, indent=2, ensure_ascii=False))
 
@@ -239,13 +246,14 @@ def main():
         if not SPOTTER_FILE.exists():
             sys.exit('--skip-scrape used but spotter_pois.json not found')
         print(f'Reusing existing {SPOTTER_FILE}')
-        spotter = json.loads(SPOTTER_FILE.read_text())
+        spotter    = json.loads(SPOTTER_FILE.read_text())
+        city_names = json.loads(CITY_NAMES_FILE.read_text()) if CITY_NAMES_FILE.exists() else {}
     else:
-        spotter = scrape_spotter(headless)
+        spotter, city_names = scrape_spotter(headless)
 
     osm    = fetch_osm()
     github = fetch_github()
-    result = merge(spotter, osm, github)
+    result = merge(spotter, osm, github, city_names)
 
     print(f'\nDone. {len(result)} POIs in {OUTPUT_FILE}')
 
