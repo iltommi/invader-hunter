@@ -1,10 +1,11 @@
-const CACHE = 'invader-hunter-v3';
+const CACHE = 'invader-hunter-v4';
 
 const PRECACHE = [
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './world_invaders.json',
   'https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -41,23 +42,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // POI data: stale-while-revalidate so the app works offline
-  if (url.hostname.includes('raw.githubusercontent.com')) {
-    e.respondWith(
-      caches.open(CACHE).then(cache =>
-        cache.match(e.request).then(cached => {
-          const networkUpdate = fetch(e.request).then(response => {
-            if (response.ok) cache.put(e.request, response.clone());
-            return response;
-          }).catch(() => null);
-          return cached || networkUpdate;
-        })
-      )
-    );
-    return;
-  }
-
-  // Cache-first for everything else (app shell, Leaflet, fonts)
+  // Cache-first for everything else (app shell, Leaflet, fonts, POI data)
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
