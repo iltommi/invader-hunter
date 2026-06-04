@@ -18,6 +18,7 @@
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <style>
   :root {
     --bg: #0a0a0f;
@@ -255,6 +256,14 @@
   #photo-share-btn    { background:var(--cyan);   color:#000; }
   #photo-download-btn { background:var(--green);  color:#000; }
   #photo-close-btn    { background:transparent; color:#888; border:1px solid #444 !important; }
+  #ml-results {
+    font-family:'Share Tech Mono',monospace; font-size:11px;
+    color:var(--text); text-align:center; min-height:18px;
+  }
+  #ml-results .ml-hit  { color:var(--green); font-weight:bold; }
+  #ml-results .ml-list { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:4px; }
+  #ml-results .ml-item { color:var(--cyan); cursor:pointer; }
+  #ml-results .ml-item:hover { text-decoration:underline; }
 
   /* ── PERSPECTIVE CORRECTION ── */
   #correct-modal {
@@ -447,6 +456,7 @@
     <button id="photo-download-btn">⬇ Save</button>
     <button id="photo-close-btn">✕ Close</button>
   </div>
+  <div id="ml-results"></div>
 </div>
 
 <div id="loader">
@@ -1092,13 +1102,21 @@ document.getElementById('correct-apply-btn').addEventListener('click', () => {
   warpCanvas.getContext('2d').putImageData(warped, 0, 0);
 
   // Store warped result for the recognition pipeline, then show photo modal
-  window._warpedCanvas = warpCanvas;
+  window._warpedCanvas  = warpCanvas;
+  window._searchCanvas  = warpCanvas;
   showPhotoModal();
 });
 
 document.getElementById('correct-skip-btn').addEventListener('click', () => {
   document.getElementById('correct-modal').classList.remove('open');
   window._warpedCanvas = null;
+  // Use original image as search canvas
+  if (_capturedImg) {
+    const c = document.createElement('canvas');
+    c.width = _capturedImg.naturalWidth; c.height = _capturedImg.naturalHeight;
+    c.getContext('2d').drawImage(_capturedImg, 0, 0);
+    window._searchCanvas = c;
+  }
   showPhotoModal();
 });
 
@@ -1186,6 +1204,11 @@ async function showPhotoModal() {
   const previewUrl = URL.createObjectURL(currentPhotoBlob);
   document.getElementById('photo-preview').src = previewUrl;
   document.getElementById('photo-modal').classList.add('open');
+
+  const searchCanvas = window._searchCanvas;
+  window._searchCanvas = null;
+  document.getElementById('ml-results').textContent = '';
+  if (searchCanvas) runMLSearch(searchCanvas);
 }
 
 document.getElementById('photo-share-btn').addEventListener('click', async () => {
@@ -1206,6 +1229,7 @@ document.getElementById('photo-close-btn').addEventListener('click', () => {
   document.getElementById('photo-modal').classList.remove('open');
   URL.revokeObjectURL(document.getElementById('photo-preview').src);
   document.getElementById('photo-preview').src = '';
+  document.getElementById('ml-results').textContent = '';
   currentPhotoBlob = currentPhotoFname = null;
 });
 
@@ -1433,6 +1457,92 @@ if ('serviceWorker' in navigator) {
       .catch(e => console.warn('SW failed:', e));
   });
 }
+
+// ─────────────────────────────────────────────────────────────
+// ML SEARCH (CLIP similarity)
+// ─────────────────────────────────────────────────────────────
+const CLIP_MEAN = [0.48145466, 0.4578275,  0.40821073];
+const CLIP_STD  = [0.26862954, 0.26130258, 0.27577711];
+
+let _ortSession  = null;
+let _embMatrix   = null;   // Float32Array [N × 512]
+let _embIds      = null;   // string[]
+let _mlReady     = false;
+let _mlLoadStart = false;
+
+async function loadMLAssets() {
+  if (_mlLoadStart) return;
+  _mlLoadStart = true;
+  try {
+    const modelFile = await fetch('clip_visual_q.onnx', {method:'HEAD'})
+      .then(r => r.ok ? 'clip_visual_q.onnx' : 'clip_visual.onnx')
+      .catch(() => 'clip_visual.onnx');
+
+    const [modelBuf, embBuf, idsJson] = await Promise.all([
+      fetch(modelFile).then(r => r.arrayBuffer()),
+      fetch('embeddings.bin').then(r => r.arrayBuffer()),
+      fetch('ids.json').then(r => r.json()),
+    ]);
+
+    _ortSession = await ort.InferenceSession.create(modelBuf);
+    _embMatrix  = new Float32Array(embBuf);
+    _embIds     = idsJson;
+    _mlReady    = true;
+  } catch(e) {
+    console.warn('ML assets not available:', e.message);
+  }
+}
+
+function _preprocessCanvas(canvas) {
+  const off = document.createElement('canvas');
+  off.width = off.height = 224;
+  off.getContext('2d').drawImage(canvas, 0, 0, 224, 224);
+  const px = off.getContext('2d').getImageData(0, 0, 224, 224).data;
+  const t  = new Float32Array(3 * 224 * 224);
+  for (let i = 0; i < 224 * 224; i++) {
+    t[i]               = (px[i*4]   / 255 - CLIP_MEAN[0]) / CLIP_STD[0];
+    t[224*224   + i]   = (px[i*4+1] / 255 - CLIP_MEAN[1]) / CLIP_STD[1];
+    t[2*224*224 + i]   = (px[i*4+2] / 255 - CLIP_MEAN[2]) / CLIP_STD[2];
+  }
+  return t;
+}
+
+async function runMLSearch(canvas, top = 5) {
+  const el = document.getElementById('ml-results');
+  if (!_mlReady) { el.textContent = ''; return; }
+
+  el.textContent = 'identifying…';
+  try {
+    const tensor  = new ort.Tensor('float32', _preprocessCanvas(canvas), [1, 3, 224, 224]);
+    const out     = await _ortSession.run({ pixel_values: tensor });
+    const q       = out.image_embeds.data;   // Float32Array [512]
+    const N       = _embIds.length;
+    const scores  = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      let dot = 0;
+      for (let j = 0; j < 512; j++) dot += _embMatrix[i * 512 + j] * q[j];
+      scores[i] = dot;
+    }
+    const idx = Array.from({length: N}, (_, i) => i)
+      .sort((a, b) => scores[b] - scores[a])
+      .slice(0, top);
+
+    const best = _embIds[idx[0]];
+    el.innerHTML =
+      `<span class="ml-hit">best match: ${best}</span>` +
+      `<div class="ml-list">` +
+      idx.map(i =>
+        `<span class="ml-item" onclick="selectPOI('${_embIds[i]}')">${_embIds[i]} ${(scores[i]*100).toFixed(0)}%</span>`
+      ).join('') +
+      `</div>`;
+  } catch(e) {
+    el.textContent = '';
+    console.warn('ML search failed:', e);
+  }
+}
+
+// Kick off asset loading as soon as the page loads (background, non-blocking)
+loadMLAssets();
 
 // ─────────────────────────────────────────────────────────────
 // BOOT
