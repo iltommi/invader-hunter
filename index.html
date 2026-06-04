@@ -257,20 +257,21 @@
   #photo-download-btn { background:var(--green);  color:#000; }
   #photo-close-btn    { background:transparent; color:#888; border:1px solid #444 !important; }
   #ml-status {
+    position:fixed; bottom:calc(76px + env(safe-area-inset-bottom,0px)); left:16px;
+    z-index:999;
+    background:var(--surface); border:1px solid var(--cyan); border-radius:2px;
+    padding:5px 9px;
     font-family:'Share Tech Mono',monospace; font-size:10px;
-    color:var(--cyan); display:flex; align-items:center; gap:5px;
+    color:var(--cyan); display:flex; align-items:center; gap:6px;
     opacity:1; transition:opacity 1.5s ease;
+    pointer-events:none;
   }
-  #ml-status.hidden { opacity:0; pointer-events:none; }
+  #ml-status.hidden { opacity:0; }
   #ml-status .ml-dot {
     width:7px; height:7px; border-radius:50%; background:var(--cyan); flex-shrink:0;
   }
-  #ml-status .ml-dot.pulsing {
-    animation:ml-pulse 1.2s ease-in-out infinite;
-  }
-  @keyframes ml-pulse {
-    0%,100% { opacity:1; } 50% { opacity:.2; }
-  }
+  #ml-status .ml-dot.pulsing { animation:ml-pulse 1.2s ease-in-out infinite; }
+  @keyframes ml-pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
   #ml-results {
     font-family:'Share Tech Mono',monospace; font-size:11px;
     color:var(--text); text-align:center; min-height:18px;
@@ -497,7 +498,6 @@
   <div class="topbar-sep"></div>
   <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">Unflashed</button>
   <div class="ml-auto">
-    <div id="ml-status"><div class="ml-dot pulsing"></div>AI loading…</div>
     <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
     <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
@@ -528,6 +528,8 @@
   <button id="fab-locate" onclick="toggleLocate()" title="My location">◎</button>
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
+
+<div id="ml-status"><div class="ml-dot pulsing"></div><span>AI loading…</span></div>
 
 <div id="toast"></div>
 
@@ -1492,7 +1494,7 @@ function _mlSetStatus(text, ready) {
   el.classList.remove('hidden');
   dot.classList.toggle('pulsing', !ready);
   dot.style.background = ready ? 'var(--green)' : 'var(--cyan)';
-  el.childNodes[1].textContent = text;
+  el.querySelector('span').textContent = text;
   if (ready) setTimeout(() => el.classList.add('hidden'), 3000);
 }
 
