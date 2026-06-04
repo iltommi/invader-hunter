@@ -171,6 +171,17 @@
   #data-menu-btn { font-size: 16px; }
   #btn-theme:hover, #data-menu-btn:hover { border-color: var(--cyan); }
 
+  #toolbar-photo-btn {
+    background: var(--red); border: 1px solid var(--red); color: #fff;
+    width: 30px; height: 30px; border-radius: 50%;
+    cursor: pointer; transition: background .4s, border-color .4s;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0; flex-shrink: 0; font-size: 14px;
+  }
+  #toolbar-photo-btn.ml-loading { background: var(--yellow); border-color: var(--yellow); color: #000; }
+  #toolbar-photo-btn.ml-ready   { background: var(--green);  border-color: var(--green);  color: #000; }
+  #toolbar-photo-btn.ml-error   { background: #000;          border-color: #444;          color: #888; }
+
   .ml-auto { margin-left:auto; display:flex; gap:8px; }
 
   /* ── MAIN LAYOUT ── */
@@ -1494,19 +1505,25 @@ let _embIds      = null;   // string[]
 let _mlReady     = false;
 let _mlLoadStart = false;
 
-function _mlSetStatus(text, ready) {
+function _mlSetStatus(text, state) {
   const el  = document.getElementById('ml-status');
   const dot = el.querySelector('.ml-dot');
+  const btn = document.getElementById('toolbar-photo-btn');
+
   el.classList.remove('hidden');
-  dot.classList.toggle('pulsing', !ready);
-  dot.style.background = ready ? 'var(--green)' : 'var(--cyan)';
+  dot.classList.toggle('pulsing', state === 'loading');
+  dot.style.background = state === 'ready' ? 'var(--green)' : state === 'error' ? '#444' : 'var(--cyan)';
   el.querySelector('span').textContent = text;
-  if (ready) setTimeout(() => el.classList.add('hidden'), 3000);
+  if (state === 'ready') setTimeout(() => el.classList.add('hidden'), 3000);
+
+  btn.classList.remove('ml-loading', 'ml-ready', 'ml-error');
+  if (state !== 'init') btn.classList.add('ml-' + state);
 }
 
 async function loadMLAssets() {
   if (_mlLoadStart) return;
   _mlLoadStart = true;
+  _mlSetStatus('AI loading…', 'loading');
   try {
     const [part0, part1, embBuf, idsJson] = await Promise.all([
       fetch('model.part0').then(r => r.arrayBuffer()),
@@ -1522,10 +1539,11 @@ async function loadMLAssets() {
     _embMatrix  = new Float32Array(embBuf);
     _embIds     = idsJson;
     _mlReady    = true;
-    _mlSetStatus('AI ready', true);
+    _mlSetStatus('AI ready', 'ready');
   } catch(e) {
     console.warn('ML assets not available:', e.message);
-    document.getElementById('ml-status').classList.add('hidden');
+    _mlSetStatus('AI unavailable', 'error');
+    setTimeout(() => document.getElementById('ml-status').classList.add('hidden'), 4000);
   }
 }
 
