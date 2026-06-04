@@ -828,6 +828,9 @@ function _updateFilterMenu() {
 function setFilter(key) {
   const idx = FILTER_STATES.findIndex(s => s.key === key);
   if (idx < 0) return;
+  if (FILTER_STATES[filterIndex].key === 'visited' && key !== 'visited') {
+    if (!confirm('Enable cheat mode?')) return;
+  }
   filterIndex = idx;
   localStorage.setItem('invader_filter', key);
   _updateFilterMenu();
