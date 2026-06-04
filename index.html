@@ -773,6 +773,11 @@ function renderMapMarkers(visited = getVisited()) {
   });
 }
 
+function spotterUrl(id) {
+  const [code, num] = id.split('_');
+  return `https://www.invader-spotter.art/grosplan/${code}/${code}_${num.padStart(3,'0')}-grosplan.png`;
+}
+
 function buildPopup(p) {
   const visited = getVisited();
   const isV = !!visited[p.id];
@@ -784,6 +789,7 @@ function buildPopup(p) {
     <div class="popup-row">📍 ${p.city || '–'}</div>
     <div class="popup-row" style="color:${color}">⬡ ${p.status || 'ok'}</div>
     ${p.points ? `<div class="popup-row">⭐ ${p.points} pts</div>` : ''}
+    <a class="popup-search-link" href="${spotterUrl(p.id)}" target="_blank" rel="noopener">🕹 Invader Spotter</a>
     <a class="popup-search-link" href="https://www.google.com/search?q=${encodeURIComponent(p.id + ' invader')}&tbm=isch" target="_blank" rel="noopener">🔍 Google Images</a>
     <button class="popup-btn" id="pbtn-${p.id}"
       style="background:${isV?'#ff8c00':'var(--green)'};color:#000;border:none">
