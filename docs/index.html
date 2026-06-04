@@ -104,6 +104,7 @@
     color:var(--text); transition:background .15s;
   }
   .data-menu-item:hover { background:rgba(0,245,255,.08); color:var(--cyan); }
+  .data-menu-item.active { color:var(--cyan); }
   .data-menu-danger { color:var(--red); }
   .data-menu-danger:hover { background:rgba(255,45,85,.08); color:var(--red); }
 
@@ -509,8 +510,6 @@
   <div id="stat-remaining-btn" onclick="toggleStatPopup(event)" title="Tap for details">
     <div class="stat-val" id="stat-remaining">–</div>
   </div>
-  <div class="topbar-sep"></div>
-  <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">Flashed</button>
   <div class="ml-auto">
     <button id="toolbar-photo-btn" onclick="takePhoto()" title="Take photo">📷</button>
     <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
@@ -524,6 +523,11 @@
   <div style="padding:8px 10px">
     <input type="text" id="search" placeholder="Search ID…" onclick="event.stopPropagation()">
   </div>
+  <div style="height:1px;background:var(--border)"></div>
+  <div class="data-menu-item filter-menu-item" data-key="unvisited" onclick="setFilter('unvisited')">☐ Unflashed</div>
+  <div class="data-menu-item filter-menu-item" data-key="visited"   onclick="setFilter('visited')">✅ Flashed</div>
+  <div class="data-menu-item filter-menu-item" data-key="destroyed" onclick="setFilter('destroyed')">💀 Destroyed</div>
+  <div class="data-menu-item filter-menu-item" data-key="all"       onclick="setFilter('all')">👾 All</div>
   <div style="height:1px;background:var(--border)"></div>
   <a class="data-menu-item" href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener" style="text-decoration:none;display:block">⌂ GitHub</a>
   <div style="height:1px;background:var(--border)"></div>
@@ -812,13 +816,22 @@ let filterIndex = (() => {
   const idx = FILTER_STATES.findIndex(s => s.key === saved);
   return idx >= 0 ? idx : FILTER_STATES.findIndex(s => s.key === 'visited');
 })();
-document.getElementById('btn-cycle').textContent = FILTER_STATES[filterIndex].label;
+_updateFilterMenu();
 
-function cycleFilter() {
-  filterIndex = (filterIndex + 1) % FILTER_STATES.length;
-  const state = FILTER_STATES[filterIndex];
-  localStorage.setItem('invader_filter', state.key);
-  document.getElementById('btn-cycle').textContent = state.label;
+function _updateFilterMenu() {
+  const key = FILTER_STATES[filterIndex].key;
+  document.querySelectorAll('.filter-menu-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.key === key);
+  });
+}
+
+function setFilter(key) {
+  const idx = FILTER_STATES.findIndex(s => s.key === key);
+  if (idx < 0) return;
+  filterIndex = idx;
+  localStorage.setItem('invader_filter', key);
+  _updateFilterMenu();
+  closeDataMenu();
   refreshAll();
 }
 
