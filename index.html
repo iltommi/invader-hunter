@@ -484,6 +484,7 @@ const STORAGE_KEY = 'invader_visited_v1';
 // ─────────────────────────────────────────────────────────────
 let allPOI = [];
 let filteredPOI = [];
+let cityPadding = {};  // city code → zero-pad width derived from max ID number
 let selectedId = null;
 let leafletMap = null;
 let clusterGroup = null;
@@ -602,6 +603,20 @@ function processItems(items) {
       lng:    p.lng != null ? parseCoord(p.lng) : null,
       status: normaliseStatus(p.status),
     }));
+
+  // Build per-city padding width from the max numeric ID seen
+  const maxNum = {};
+  for (const p of allPOI) {
+    const [code, num] = p.id.split('_');
+    if (num) {
+      const n = parseInt(num, 10);
+      if (!maxNum[code] || n > maxNum[code]) maxNum[code] = n;
+    }
+  }
+  cityPadding = {};
+  for (const [code, n] of Object.entries(maxNum)) {
+    cityPadding[code] = String(n).length;
+  }
 }
 
 async function fetchFromNetwork() {
@@ -836,7 +851,8 @@ function renderMapMarkers(visited = getVisited()) {
 
 function spotterUrl(id) {
   const [code, num] = id.split('_');
-  return `https://www.invader-spotter.art/grosplan/${code}/${code}_${num.padStart(4,'0')}-grosplan.png`;
+  const width = cityPadding[code] || String(num).length;
+  return `https://www.invader-spotter.art/grosplan/${code}/${code}_${num.padStart(width,'0')}-grosplan.png`;
 }
 
 function buildPopup(p) {
