@@ -549,34 +549,49 @@ function setLoader(msg, pct) {
   document.getElementById('loader-bar').style.width = pct + '%';
 }
 
-async function loadData() {
-  setLoader('Fetching POI database from GitHub…', 20);
+// ── IndexedDB helpers ─────────────────────────────────────────
+const IDB_NAME = 'invader-hunter';
 
-  const res = await fetch(JSON_URL);
-  if (!res.ok) throw new Error('HTTP ' + res.status);
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(IDB_NAME, 1);
+    r.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+    r.onsuccess = e => res(e.target.result);
+    r.onerror   = e => rej(e.target.error);
+  });
+}
+function idbGet(db, key) {
+  return new Promise((res, rej) => {
+    const r = db.transaction('kv').objectStore('kv').get(key);
+    r.onsuccess = e => res(e.target.result);
+    r.onerror   = e => rej(e.target.error);
+  });
+}
+function idbSet(db, key, val) {
+  return new Promise((res, rej) => {
+    const r = db.transaction('kv', 'readwrite').objectStore('kv').put(val, key);
+    r.onsuccess = () => res();
+    r.onerror   = e => rej(e.target.error);
+  });
+}
 
-  setLoader('Parsing data…', 60);
-  const raw = await res.json();
+// ── Data processing ───────────────────────────────────────────
+function parseCoord(v) {
+  const n = parseFloat(String(v).replace(',', '.'));
+  return (!isNaN(n) && n !== 0) ? n : null;
+}
 
-  let items = Array.isArray(raw) ? raw
-    : raw.invaders ? raw.invaders
-    : Object.values(raw).flat();
+function normaliseStatus(s) {
+  if (!s) return 'ok';
+  const l = s.toLowerCase();
+  if (l === 'ok') return 'ok';
+  if (l.includes('destroy') || l.includes('gone') || l.includes('missing')) return 'destroyed';
+  if (l.includes('hidden') || l.includes('covered')) return 'hidden';
+  if (l.includes('damage') || l.includes('little') || l.includes('partial')) return 'damaged';
+  return 'ok';
+}
 
-  function parseCoord(v) {
-    const n = parseFloat(String(v).replace(',', '.'));
-    return (!isNaN(n) && n !== 0) ? n : null;
-  }
-
-  function normaliseStatus(s) {
-    if (!s) return 'ok';
-    const l = s.toLowerCase();
-    if (l === 'ok') return 'ok';
-    if (l.includes('destroy') || l.includes('gone') || l.includes('missing')) return 'destroyed';
-    if (l.includes('hidden') || l.includes('covered')) return 'hidden';
-    if (l.includes('damage') || l.includes('little') || l.includes('partial')) return 'damaged';
-    return 'ok';
-  }
-
+function processItems(items) {
   allPOI = items
     .filter(p => p && (p.id || p.name))
     .map(p => ({
@@ -586,16 +601,55 @@ async function loadData() {
       lng:    p.lng != null ? parseCoord(p.lng) : null,
       status: normaliseStatus(p.status),
     }));
+}
 
-  setLoader('Rendering map…', 90);
+async function fetchFromNetwork() {
+  const res = await fetch(JSON_URL);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const raw  = await res.json();
+  const etag = res.headers.get('ETag') || res.headers.get('Last-Modified') || '';
+  const items = Array.isArray(raw) ? raw
+    : raw.invaders ? raw.invaders
+    : Object.values(raw).flat();
+  return { items, etag };
+}
 
-  initMap();
-  refreshAll();
+async function loadData() {
+  const db = await idbOpen();
+  const cached = await idbGet(db, 'pois');
 
-  setLoader('Ready!', 100);
-  setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 400);
+  if (cached) {
+    setLoader('Loading local data…', 40);
+    processItems(cached.items);
+    setLoader('Rendering map…', 80);
+    initMap();
+    refreshAll();
+    setLoader('Ready!', 100);
+    setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 400);
+    startLocate();
 
-  startLocate();
+    // Background refresh: fetch silently and update IDB if data changed
+    fetchFromNetwork().then(async ({ items, etag }) => {
+      if (etag && etag === cached.etag) return; // unchanged
+      await idbSet(db, 'pois', { items, etag });
+      processItems(items);
+      refreshAll();
+      showToast('✓ POI data updated');
+    }).catch(() => {}); // offline — no problem
+
+  } else {
+    setLoader('Fetching POI database…', 20);
+    const { items, etag } = await fetchFromNetwork();
+    setLoader('Saving locally…', 70);
+    await idbSet(db, 'pois', { items, etag });
+    setLoader('Rendering map…', 90);
+    processItems(items);
+    initMap();
+    refreshAll();
+    setLoader('Ready!', 100);
+    setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 400);
+    startLocate();
+  }
 }
 
 // ─────────────────────────────────────────────────────────────

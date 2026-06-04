@@ -1,11 +1,10 @@
-const CACHE = 'invader-hunter-v4';
+const CACHE = 'invader-hunter-v5';
 
 const PRECACHE = [
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './world_invaders.json',
   'https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
