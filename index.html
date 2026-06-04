@@ -915,7 +915,7 @@ function renderList(visited = getVisited()) {
   let visible = filteredPOI;
   if (leafletMap) {
     const bounds = leafletMap.getBounds();
-    visible = filteredPOI.filter(p => bounds.contains([p.lat, p.lng]));
+    visible = filteredPOI.filter(p => p.lat && p.lng && bounds.contains([p.lat, p.lng]));
   }
 
   document.getElementById('list-count').textContent = `(${visible.length})`;
@@ -951,7 +951,7 @@ function selectPOI(id) {
   if (!p) return;
   renderList();
 
-  if (markerMap[id]) {
+  if (markerMap[id] && p.lat && p.lng) {
     leafletMap.setView([p.lat, p.lng], Math.max(leafletMap.getZoom(), 16), { animate:true });
     setTimeout(() => {
       if (markerMap[id]) markerMap[id].openPopup();
