@@ -554,11 +554,13 @@ async function loadData() {
   const raw = await res.json();
 
   let items = Array.isArray(raw) ? raw
-    : raw.pois     ? (window._poiMeta = raw.meta, raw.pois)
     : raw.invaders ? raw.invaders
     : Object.values(raw).flat();
 
-  function parseCoord(v) { return parseFloat(String(v).replace(',', '.')); }
+  function parseCoord(v) {
+    const n = parseFloat(String(v).replace(',', '.'));
+    return (!isNaN(n) && n !== 0) ? n : null;
+  }
 
   function normaliseStatus(s) {
     if (!s) return 'ok';
@@ -570,17 +572,15 @@ async function loadData() {
     return 'ok';
   }
 
-  allPOI = items.filter(p => {
-    if (!p || p.lat == null || p.lng == null) return false;
-    const la = parseCoord(p.lat), lo = parseCoord(p.lng);
-    return !isNaN(la) && !isNaN(lo) && la !== 0 && lo !== 0;
-  }).map(p => ({
-    ...p,
-    lat: parseCoord(p.lat),
-    lng: parseCoord(p.lng),
-    status: normaliseStatus(p.status),
-    id: p.id || p.name || '?',
-  }));
+  allPOI = items
+    .filter(p => p && (p.id || p.name))
+    .map(p => ({
+      ...p,
+      id:     p.id || p.name || '?',
+      lat:    p.lat != null ? parseCoord(p.lat) : null,
+      lng:    p.lng != null ? parseCoord(p.lng) : null,
+      status: normaliseStatus(p.status),
+    }));
 
   setLoader('Rendering map…', 90);
 
@@ -701,9 +701,8 @@ function updateStats(visited = getVisited()) {
   document.getElementById('stat-total').textContent           = allPOI.length.toLocaleString();
   document.getElementById('stat-visited').textContent         = vc.toLocaleString();
   document.getElementById('stat-points').textContent          = pts.toLocaleString();
-  document.getElementById('stat-pct').textContent             = pct + '%';
-  const noCoords = window._poiMeta?.without_coords;
-  document.getElementById('stat-nocoords').textContent = noCoords != null ? noCoords.toLocaleString() : '–';
+  document.getElementById('stat-pct').textContent      = pct + '%';
+  document.getElementById('stat-nocoords').textContent = allPOI.filter(p => !p.lat).length.toLocaleString();
 }
 
 function toggleStatPopup(e) {
@@ -753,6 +752,7 @@ function renderMapMarkers(visited = getVisited()) {
   markerMap = {};
 
   filteredPOI.forEach(p => {
+    if (!p.lat || !p.lng) return;  // no coords — skip map marker, still in list
     const isV = !!visited[p.id];
     const color = isV ? '#ff8c00' : (STATUS_COLOR[p.status] || '#39ff14');
     const opacity = isV ? 0.4 : 0.85;

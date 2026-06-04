@@ -206,7 +206,7 @@ def merge(spotter, osm, github):
             entry['lng'] = osm[pid]['lng']
         else:
             no_coord.append(pid)
-            continue
+            # still include in output — lat/lng simply absent
 
         result.append(entry)
 
@@ -217,20 +217,11 @@ def merge(spotter, osm, github):
             result.append({'id': pid, 'city': '', 'status': gh['status'],
                            'points': gh['points'], 'lat': gh['lat'], 'lng': gh['lng']})
 
-    # Group missing by city for the report
+    OUTPUT_FILE.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+
+    # Report
     from collections import Counter
     missing_by_city = Counter(pid.split('_')[0] for pid in no_coord)
-
-    import datetime
-    output = {
-        'meta': {
-            'generated_at':  datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'total_spotter': len(spotter),
-            'without_coords': len(no_coord),
-        },
-        'pois': result,
-    }
-    OUTPUT_FILE.write_text(json.dumps(output, indent=2, ensure_ascii=False))
 
     print(f'  → {len(result)} geolocated POIs written to {OUTPUT_FILE}')
     print(f'  → {len(no_coord)} POIs without coordinates:')
