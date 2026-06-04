@@ -199,17 +199,13 @@
     font-family:'Press Start 2P',monospace!important; font-size:8px!important;
   }
 
-  /* ── SIDEBAR ── */
+  /* ── SIDEBAR (shared drawer foundation) ── */
   .sidebar {
-    width:300px; background:var(--surface);
-    border-left:2px solid var(--cyan);
-    box-shadow:-6px 0 24px rgba(0,245,255,.08);
-    display:flex; flex-direction:column; overflow:hidden; flex-shrink:0;
-    transition: width .25s ease;
+    background:var(--surface);
+    display:flex; flex-direction:column; overflow:hidden;
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    z-index: 1000;
   }
-  .sidebar.collapsed { width: 36px; }
-  .sidebar.collapsed .poi-list,
-  .sidebar.collapsed #list-count { display: none; }
   .sidebar-header { cursor: pointer; user-select: none; }
   .sidebar-header {
     padding:12px 14px; border-bottom:1px solid var(--border);
@@ -348,60 +344,56 @@
     100% { box-shadow: 0 0 0 14px rgba(255,0,255,.0); }
   }
 
-  /* ── MOBILE ── */
+  /* ── MOBILE: bottom sheet ── */
   @media (max-width: 640px) {
-
-    /* Collapse topbar into a scrollable single row */
     .controls {
-      padding: 6px 10px;
-      overflow-x: auto;
-      flex-wrap: nowrap;
-      scrollbar-width: none;
+      padding: 6px 10px; overflow-x: auto;
+      flex-wrap: nowrap; scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
     }
     .controls::-webkit-scrollbar { display: none; }
     .ml-auto { margin-left: 0; }
 
-    /* Map takes full screen */
     .main { position: relative; }
     #map { width: 100%; height: 100%; }
 
-    /* Sidebar becomes a bottom sheet */
     .sidebar {
       position: absolute;
-      bottom: 0; left: 0; right: 0;
-      width: 100%;
-      height: 65vh;
-      border-left: none;
+      bottom: 0; left: 0; right: 0; width: 100%; height: 65vh;
       border-top: 2px solid var(--cyan);
       border-radius: 12px 12px 0 0;
       transform: translateY(100%);
-      transition: transform .3s cubic-bezier(.4,0,.2,1);
-      z-index: 1000;
       box-shadow: 0 -8px 40px rgba(0,245,255,.15);
     }
     .sidebar.open { transform: translateY(0); }
 
-    /* Drag handle */
     .sidebar-handle {
-      display: block;
-      width: 40px; height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 8px auto 4px;
-      cursor: pointer;
+      display: block; width: 40px; height: 4px;
+      background: var(--border); border-radius: 2px;
+      margin: 8px auto 4px; cursor: pointer;
     }
 
-    /* Floating list button */
     #fab-list { display: flex; }
-
-    /* Toast higher on mobile so FAB doesn't cover it */
     #toast { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
   }
 
+  /* ── DESKTOP: right-side drawer ── */
   @media (min-width: 641px) {
+    .main { position: relative; }
+    #map { width: 100%; height: 100%; }
+
+    .sidebar {
+      position: absolute;
+      top: 0; right: 0; bottom: 0; width: 320px;
+      border-left: 2px solid var(--cyan);
+      border-radius: 12px 0 0 12px;
+      transform: translateX(100%);
+      box-shadow: -8px 0 40px rgba(0,245,255,.15);
+    }
+    .sidebar.open { transform: translateX(0); }
+
     .sidebar-handle { display: none; }
-    #fab-list { display: none; }
+    #fab-list { display: flex; }
     #sheet-arrow { display: inline; }
   }
 
@@ -463,7 +455,7 @@
 
   <div class="sidebar">
     <div class="sidebar-handle" onclick="toggleSheet()"></div>
-    <div class="sidebar-header" onclick="handleSidebarClick()">📡 <span class="sidebar-title">POI LIST <span id="list-count" style="color:#606080;margin-left:8px"></span></span> <span id="sheet-arrow" style="float:right;color:#606080">◀</span></div>
+    <div class="sidebar-header" onclick="handleSidebarClick()">📡 <span class="sidebar-title">POI LIST <span id="list-count" style="color:#606080;margin-left:8px"></span></span> <span id="sheet-arrow" style="float:right;color:#606080">✕</span></div>
     <div class="poi-list" id="poi-list"></div>
   </div>
   <button id="fab-locate" onclick="toggleLocate()" title="My location">◎</button>
@@ -1077,25 +1069,9 @@ function toggleTheme() {
 if (isLight) document.body.classList.add('light');
 
 // ─────────────────────────────────────────────────────────────
-// DESKTOP SIDEBAR COLLAPSE
+// SIDEBAR (shared for mobile + desktop)
 // ─────────────────────────────────────────────────────────────
-let sidebarCollapsed = false;
-
-function handleSidebarClick() {
-  if (window.innerWidth > 640) {
-    toggleSidebar();
-  } else {
-    toggleSheet();
-  }
-}
-
-function toggleSidebar() {
-  sidebarCollapsed = !sidebarCollapsed;
-  document.querySelector('.sidebar').classList.toggle('collapsed', sidebarCollapsed);
-  document.getElementById('sheet-arrow').textContent = sidebarCollapsed ? '▶' : '◀';
-  if (!sidebarCollapsed) renderList();
-  setTimeout(() => leafletMap && leafletMap.invalidateSize(), 260);
-}
+function handleSidebarClick() { toggleSheet(); }
 
 // ─────────────────────────────────────────────────────────────
 // GEOLOCATION
@@ -1174,22 +1150,22 @@ function onLocationError(err) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MOBILE BOTTOM SHEET
+// SHEET TOGGLE (mobile bottom / desktop right drawer)
 // ─────────────────────────────────────────────────────────────
 let sheetOpen = false;
 
 function toggleSheet() {
-  if (window.innerWidth > 640) return;
   sheetOpen = !sheetOpen;
   document.querySelector('.sidebar').classList.toggle('open', sheetOpen);
-  document.getElementById('sheet-arrow').textContent = sheetOpen ? '▼' : '▲';
   document.getElementById('fab-list').style.display = sheetOpen ? 'none' : 'flex';
+  document.getElementById('sheet-arrow').textContent = sheetOpen ? '✕' : '≡';
   if (sheetOpen) renderList();
+  setTimeout(() => leafletMap && leafletMap.invalidateSize(), 320);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('map').addEventListener('click', () => {
-    if (sheetOpen && window.innerWidth <= 640) toggleSheet();
+    if (sheetOpen) toggleSheet();
   });
 });
 
