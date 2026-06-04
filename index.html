@@ -255,6 +255,8 @@
   }
   #photo-share-btn    { background:var(--cyan);   color:#000; }
   #photo-download-btn { background:var(--green);  color:#000; }
+  #photo-ai-btn       { background:var(--purple); color:#fff; }
+  #photo-ai-btn:disabled { opacity:.4; cursor:default; }
   #photo-close-btn    { background:transparent; color:#888; border:1px solid #444 !important; }
   #ml-status {
     position:fixed; bottom:calc(76px + env(safe-area-inset-bottom,0px)); left:16px;
@@ -470,6 +472,7 @@
   <div id="photo-modal-actions">
     <button id="photo-share-btn">⬆ Share</button>
     <button id="photo-download-btn">⬇ Save</button>
+    <button id="photo-ai-btn">👾 Identify</button>
     <button id="photo-close-btn">✕ Close</button>
   </div>
   <div id="ml-results"></div>
@@ -1221,12 +1224,9 @@ async function showPhotoModal() {
 
   const previewUrl = URL.createObjectURL(currentPhotoBlob);
   document.getElementById('photo-preview').src = previewUrl;
-  document.getElementById('photo-modal').classList.add('open');
-
-  const searchCanvas = window._searchCanvas;
-  window._searchCanvas = null;
   document.getElementById('ml-results').textContent = '';
-  if (searchCanvas) runMLSearch(searchCanvas);
+  document.getElementById('photo-ai-btn').disabled = !_mlReady;
+  document.getElementById('photo-modal').classList.add('open');
 }
 
 document.getElementById('photo-share-btn').addEventListener('click', async () => {
@@ -1243,11 +1243,19 @@ document.getElementById('photo-download-btn').addEventListener('click', () => {
   if (currentPhotoBlob) downloadBlob(currentPhotoBlob, currentPhotoFname);
 });
 
+document.getElementById('photo-ai-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('photo-ai-btn');
+  btn.disabled = true;
+  await runMLSearch(window._searchCanvas);
+  btn.disabled = false;
+});
+
 document.getElementById('photo-close-btn').addEventListener('click', () => {
   document.getElementById('photo-modal').classList.remove('open');
   URL.revokeObjectURL(document.getElementById('photo-preview').src);
   document.getElementById('photo-preview').src = '';
   document.getElementById('ml-results').textContent = '';
+  window._searchCanvas = null;
   currentPhotoBlob = currentPhotoFname = null;
 });
 
