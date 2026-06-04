@@ -430,6 +430,7 @@
   <div class="stat-popup-row"><span>Flashed</span><span id="stat-visited" style="color:var(--green)">0</span></div>
   <div class="stat-popup-row"><span>Points</span><span id="stat-points" style="color:var(--yellow)">0</span></div>
   <div class="stat-popup-row"><span>Done</span><span id="stat-pct" style="color:var(--purple)">0%</span></div>
+  <div class="stat-popup-row"><span>Destroyed</span><span id="stat-destroyed" style="color:var(--red)">–</span></div>
   <div class="stat-popup-row"><span>No coords</span><span id="stat-nocoords" style="color:#606080">–</span></div>
 </div>
 
@@ -761,7 +762,8 @@ function updateStats(visited = getVisited()) {
   document.getElementById('stat-visited').textContent         = vc.toLocaleString();
   document.getElementById('stat-points').textContent          = pts.toLocaleString();
   document.getElementById('stat-pct').textContent      = pct + '%';
-  document.getElementById('stat-nocoords').textContent = allPOI.filter(p => !p.lat).length.toLocaleString();
+  document.getElementById('stat-destroyed').textContent = allPOI.filter(p => p.status === 'destroyed').length.toLocaleString();
+  document.getElementById('stat-nocoords').textContent  = allPOI.filter(p => !p.lat).length.toLocaleString();
 }
 
 function toggleStatPopup(e) {
