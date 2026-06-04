@@ -1138,14 +1138,25 @@ document.getElementById('photo-input').addEventListener('change', async e => {
 
 async function showPhotoModal() {
   const poi = _capturedPOI;
-  const img = _capturedImg;
-  if (!poi || !img) return;
+  if (!poi) return;
 
   const canvas = document.createElement('canvas');
-  canvas.width  = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0);
+  const ctx    = canvas.getContext('2d');
+
+  if (window._warpedCanvas) {
+    // Use the perspective-corrected image
+    canvas.width  = window._warpedCanvas.width;
+    canvas.height = window._warpedCanvas.height;
+    ctx.drawImage(window._warpedCanvas, 0, 0);
+    window._warpedCanvas = null;
+  } else {
+    // Fall back to original photo
+    const img = _capturedImg;
+    if (!img) return;
+    canvas.width  = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    ctx.drawImage(img, 0, 0);
+  }
 
   const W = canvas.width, H = canvas.height;
   const barH = Math.round(H * 0.09);
