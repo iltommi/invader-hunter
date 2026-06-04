@@ -768,6 +768,7 @@ function initMap() {
     maxNativeZoom: 19,
   });
   window._tileLayer.addTo(leafletMap);
+  L.control.scale({ imperial: false }).addTo(leafletMap);
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius(zoom) {
