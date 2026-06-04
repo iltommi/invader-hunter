@@ -510,7 +510,7 @@
     <div class="stat-val" id="stat-remaining">–</div>
   </div>
   <div class="topbar-sep"></div>
-  <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">Unflashed</button>
+  <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">Flashed</button>
   <div class="ml-auto">
     <button id="toolbar-photo-btn" onclick="takePhoto()" title="Take photo">📷</button>
     <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
@@ -807,11 +807,17 @@ const FILTER_STATES = [
   { key: 'destroyed',  label: 'Destroyed', hideDestroyed: false },
   { key: 'all',        label: 'All',       hideDestroyed: false },
 ];
-let filterIndex = 0;
+let filterIndex = (() => {
+  const saved = localStorage.getItem('invader_filter');
+  const idx = FILTER_STATES.findIndex(s => s.key === saved);
+  return idx >= 0 ? idx : FILTER_STATES.findIndex(s => s.key === 'visited');
+})();
+document.getElementById('btn-cycle').textContent = FILTER_STATES[filterIndex].label;
 
 function cycleFilter() {
   filterIndex = (filterIndex + 1) % FILTER_STATES.length;
   const state = FILTER_STATES[filterIndex];
+  localStorage.setItem('invader_filter', state.key);
   document.getElementById('btn-cycle').textContent = state.label;
   refreshAll();
 }
