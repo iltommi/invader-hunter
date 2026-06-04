@@ -425,6 +425,7 @@
   <div class="stat-popup-row"><span>Flashed</span><span id="stat-visited" style="color:var(--green)">0</span></div>
   <div class="stat-popup-row"><span>Points</span><span id="stat-points" style="color:var(--yellow)">0</span></div>
   <div class="stat-popup-row"><span>Done</span><span id="stat-pct" style="color:var(--purple)">0%</span></div>
+  <div class="stat-popup-row"><span>No coords</span><span id="stat-nocoords" style="color:#606080">–</span></div>
 </div>
 
 <div class="controls">
@@ -553,6 +554,7 @@ async function loadData() {
   const raw = await res.json();
 
   let items = Array.isArray(raw) ? raw
+    : raw.pois     ? (window._poiMeta = raw.meta, raw.pois)
     : raw.invaders ? raw.invaders
     : Object.values(raw).flat();
 
@@ -700,6 +702,8 @@ function updateStats(visited = getVisited()) {
   document.getElementById('stat-visited').textContent         = vc.toLocaleString();
   document.getElementById('stat-points').textContent          = pts.toLocaleString();
   document.getElementById('stat-pct').textContent             = pct + '%';
+  const noCoords = window._poiMeta?.without_coords;
+  document.getElementById('stat-nocoords').textContent = noCoords != null ? noCoords.toLocaleString() : '–';
 }
 
 function toggleStatPopup(e) {
