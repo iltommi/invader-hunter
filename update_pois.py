@@ -4,8 +4,9 @@ Full POI update pipeline — run periodically to keep world_invaders.json fresh.
 
 Steps:
   1. Scrape invader-spotter.art  →  spotter_pois.json   (IDs, status, points)
-  2. Query Overpass / OSM        →  coordinates
-  3. Merge everything            →  world_invaders.json
+  2. Fetch pnote.eu              →  primary coordinates  (4 259 POIs)
+  3. Query Overpass / OSM        →  fallback coordinates for anything missing
+  4. Merge everything            →  world_invaders.json
 
 Usage:
   python3 update_pois.py              # full run (headless browser)
@@ -22,7 +23,7 @@ from selenium.webdriver.common.by import By
 # ── config ────────────────────────────────────────────────────────────────────
 
 SPOTTER_BASE = 'https://www.invader-spotter.art/villes.php'
-GITHUB_URL   = 'https://raw.githubusercontent.com/goguelnikov/SpaceInvaders/main/world_space_invaders_V05.json'
+PNOTE_URL    = 'https://pnote.eu/projects/invaders/map/invaders.json'
 OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
 OVERPASS_Q   = '[out:json][timeout:120];\nnode["artist_name"="Invader"];\nout body;'
 
@@ -173,28 +174,24 @@ def fetch_osm():
     print(f'  → {len(osm)} geolocated POIs from OSM')
     return osm
 
-# ── step 3: fetch GitHub fallback coords ─────────────────────────────────────
+# ── step 2: fetch pnote.eu coords (primary) ──────────────────────────────────
 
-def fetch_github():
-    print('\n── Step 3: fetching GitHub coordinate fallback ──')
-    raw   = fetch_json(GITHUB_URL)
-    items = raw if isinstance(raw, list) \
-        else raw.get('invaders', list(raw.values())[0] if isinstance(raw, dict) else [])
-    github = {}
+def fetch_pnote():
+    print('\n── Step 2: fetching pnote.eu coordinates ──')
+    items = fetch_json(PNOTE_URL)
+    pnote = {}
     for p in items:
-        pid = str(p.get('id') or p.get('name') or '').strip()
-        lat = parse_coord(p.get('lat'))
-        lng = parse_coord(p.get('lng'))
-        if pid and lat and lng and lat != 0 and lng != 0:
-            github[pid] = {'lat': lat, 'lng': lng,
-                           'status': normalise_status(p.get('status')),
-                           'points': int(p['points']) if str(p.get('points','')).isdigit() else None}
-    print(f'  → {len(github)} geolocated POIs from GitHub')
-    return github
+        pid = str(p.get('id') or '').strip()
+        lat = p.get('obf_lat')
+        lng = p.get('obf_lng')
+        if pid and lat and lng:
+            pnote[pid] = {'lat': lat, 'lng': lng}
+    print(f'  → {len(pnote)} geolocated POIs from pnote.eu')
+    return pnote
 
 # ── step 4: merge ─────────────────────────────────────────────────────────────
 
-def merge(spotter, osm, github, city_names):
+def merge(spotter, pnote, osm, city_names):
     print('\n── Step 4: merging ──')
     result   = []
     no_coord = []
@@ -203,9 +200,9 @@ def merge(spotter, osm, github, city_names):
         pid   = p['id']
         entry = {'id': pid, 'city': p['city'], 'status': p['status'], 'points': p['points']}
 
-        if pid in github:
-            entry['lat'] = github[pid]['lat']
-            entry['lng'] = github[pid]['lng']
+        if pid in pnote:
+            entry['lat'] = pnote[pid]['lat']
+            entry['lng'] = pnote[pid]['lng']
         elif pid in osm:
             entry['lat'] = osm[pid]['lat']
             entry['lng'] = osm[pid]['lng']
@@ -214,15 +211,6 @@ def merge(spotter, osm, github, city_names):
             # still include in output — lat/lng simply absent
 
         result.append(entry)
-
-    # Add any github POIs not in spotter (safety net)
-    spotter_ids = {p['id'] for p in spotter}
-    for pid, gh in github.items():
-        if pid not in spotter_ids:
-            code = pid.split('_')[0]
-            result.append({'id': pid, 'city': city_names.get(code, code),
-                           'status': gh['status'], 'points': gh['points'],
-                           'lat': gh['lat'], 'lng': gh['lng']})
 
     OUTPUT_FILE.write_text(json.dumps(result, indent=2, ensure_ascii=False))
 
@@ -251,9 +239,9 @@ def main():
     else:
         spotter, city_names = scrape_spotter(headless)
 
+    pnote  = fetch_pnote()
     osm    = fetch_osm()
-    github = fetch_github()
-    result = merge(spotter, osm, github, city_names)
+    result = merge(spotter, pnote, osm, city_names)
 
     print(f'\nDone. {len(result)} POIs in {OUTPUT_FILE}')
 

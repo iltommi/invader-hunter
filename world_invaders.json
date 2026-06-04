@@ -3627,7 +3627,9 @@
     "id": "HK_106",
     "city": "Hong Kong",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 22.2951228069,
+    "lng": 114.1664569883
   },
   {
     "id": "HK_107",
@@ -4023,85 +4025,113 @@
     "id": "SL_01",
     "city": "Seoul",
     "status": "destroyed",
-    "points": 20
+    "points": 20,
+    "lat": 37.5555844325,
+    "lng": 126.9209083062
   },
   {
     "id": "SL_02",
     "city": "Seoul",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 37.5534896453,
+    "lng": 126.9222200187
   },
   {
     "id": "SL_03",
     "city": "Seoul",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 37.5543729572,
+    "lng": 126.9305442492
   },
   {
     "id": "SL_04",
     "city": "Seoul",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 37.5515901545,
+    "lng": 126.9217726707
   },
   {
     "id": "SL_05",
     "city": "Seoul",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 37.5537379066,
+    "lng": 126.9243532591
   },
   {
     "id": "SL_06",
     "city": "Seoul",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 37.5522541052,
+    "lng": 126.922479323
   },
   {
     "id": "SL_07",
     "city": "Seoul",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 37.5567569482,
+    "lng": 126.9843147346
   },
   {
     "id": "SL_08",
     "city": "Seoul",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 37.5585374899,
+    "lng": 126.9846539353
   },
   {
     "id": "SL_09",
     "city": "Seoul",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 37.5718441244,
+    "lng": 126.9869816162
   },
   {
     "id": "SL_10",
     "city": "Seoul",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 37.57378057,
+    "lng": 126.98540943
   },
   {
     "id": "SL_11",
     "city": "Seoul",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 37.5741676629,
+    "lng": 126.9845107701
   },
   {
     "id": "SL_12",
     "city": "Seoul",
     "status": "destroyed",
-    "points": 30
+    "points": 30,
+    "lat": 37.5732296012,
+    "lng": 126.9864299698
   },
   {
     "id": "SL_13",
     "city": "Seoul",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 37.5647978543,
+    "lng": 126.9871913909
   },
   {
     "id": "SL_14",
     "city": "Seoul",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 37.5631183941,
+    "lng": 126.9913813798
   },
   {
     "id": "BRC_01",
@@ -9161,99 +9191,129 @@
     "id": "AMI_01",
     "city": "Amiens",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 49.8906437377,
+    "lng": 2.2907121966
   },
   {
     "id": "AMI_02",
     "city": "Amiens",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 49.8943146458,
+    "lng": 2.2923065775
   },
   {
     "id": "AMI_03",
     "city": "Amiens",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 49.8949954048,
+    "lng": 2.296167803
   },
   {
     "id": "AMI_04",
     "city": "Amiens",
     "status": "ok",
     "points": 30,
-    "lat": 49.8977707,
-    "lng": 2.3017536
+    "lat": 49.8977527806,
+    "lng": 2.3017638211
   },
   {
     "id": "AMI_05",
     "city": "Amiens",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 49.9000610728,
+    "lng": 2.3083745514
   },
   {
     "id": "AMI_06",
     "city": "Amiens",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 49.9009381349,
+    "lng": 2.3013826563
   },
   {
     "id": "AMI_07",
     "city": "Amiens",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 49.9051379403,
+    "lng": 2.2979600768
   },
   {
     "id": "AMI_08",
     "city": "Amiens",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 49.8895353682,
+    "lng": 2.3026772462
   },
   {
     "id": "AMI_09",
     "city": "Amiens",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 49.8921540494,
+    "lng": 2.3004342177
   },
   {
     "id": "AMI_10",
     "city": "Amiens",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 49.8921247634,
+    "lng": 2.300217801
   },
   {
     "id": "AMI_11",
     "city": "Amiens",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 49.8947878085,
+    "lng": 2.3005426322
   },
   {
     "id": "AMI_12",
     "city": "Amiens",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 49.8961763348,
+    "lng": 2.3049458247
   },
   {
     "id": "AMI_13",
     "city": "Amiens",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 49.8955703362,
+    "lng": 2.3033737571
   },
   {
     "id": "AMI_14",
     "city": "Amiens",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 49.8930734065,
+    "lng": 2.2974235204
   },
   {
     "id": "AMI_15",
     "city": "Amiens",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 49.8936511084,
+    "lng": 2.2980545249
   },
   {
     "id": "AMI_16",
     "city": "Amiens",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 49.8909229936,
+    "lng": 2.3063165097
   },
   {
     "id": "AVI_01",
@@ -9860,480 +9920,480 @@
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.4783045,
-    "lng": -1.5579615
+    "lat": 43.4783309194,
+    "lng": -1.5579927214
   },
   {
     "id": "BAB_02",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.481179,
-    "lng": -1.559055
+    "lat": 43.4811926016,
+    "lng": -1.5589956202
   },
   {
     "id": "BAB_03",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.481617,
-    "lng": -1.56391
+    "lat": 43.48158262,
+    "lng": -1.5638661531
   },
   {
     "id": "BAB_04",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.482354,
-    "lng": -1.563714
+    "lat": 43.4822971554,
+    "lng": -1.5637424615
   },
   {
     "id": "BAB_05",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.4812033,
-    "lng": -1.5669732
+    "lat": 43.4811846614,
+    "lng": -1.566947357
   },
   {
     "id": "BAB_06",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "destroyed",
     "points": 20,
-    "lat": 43.487173,
-    "lng": -1.556655
+    "lat": 43.4871225255,
+    "lng": -1.5566863488
   },
   {
     "id": "BAB_07",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "destroyed",
     "points": 30,
-    "lat": 43.4864,
-    "lng": -1.557293
+    "lat": 43.4863446923,
+    "lng": -1.5572632464
   },
   {
     "id": "BAB_08",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.489023,
-    "lng": -1.553927
+    "lat": 43.489025845,
+    "lng": -1.5539199016
   },
   {
     "id": "BAB_09",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.503717,
-    "lng": -1.538684
+    "lat": 43.503716902,
+    "lng": -1.5386884366
   },
   {
     "id": "BAB_10",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.481835,
-    "lng": -1.515145
+    "lat": 43.4818441246,
+    "lng": -1.5151353059
   },
   {
     "id": "BAB_11",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.479316,
-    "lng": -1.558374
+    "lat": 43.4793497304,
+    "lng": -1.5584567962
   },
   {
     "id": "BAB_12",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.481566,
-    "lng": -1.568891
+    "lat": 43.4815498443,
+    "lng": -1.5688830954
   },
   {
     "id": "BAB_13",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.383152,
-    "lng": -1.663514
+    "lat": 43.3832257945,
+    "lng": -1.6635102302
   },
   {
     "id": "BAB_14",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.476451,
-    "lng": -1.566651
+    "lat": 43.4764353562,
+    "lng": -1.5666429043
   },
   {
     "id": "BAB_15",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.489473,
-    "lng": -1.478131
+    "lat": 43.4894724257,
+    "lng": -1.4782100014
   },
   {
     "id": "BAB_16",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.4906228,
-    "lng": -1.4788363
+    "lat": 43.4905692715,
+    "lng": -1.4788136547
   },
   {
     "id": "BAB_17",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.490765,
-    "lng": -1.477149
+    "lat": 43.4907723052,
+    "lng": -1.4771574294
   },
   {
     "id": "BAB_18",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.4901474,
-    "lng": -1.4766374
+    "lat": 43.490138954,
+    "lng": -1.4766221441
   },
   {
     "id": "BAB_19",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.488467,
-    "lng": -1.475617
+    "lat": 43.488461747,
+    "lng": -1.4755180329
   },
   {
     "id": "BAB_20",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.4909238,
-    "lng": -1.4758754
+    "lat": 43.4909107469,
+    "lng": -1.475842184
   },
   {
     "id": "BAB_21",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "destroyed",
     "points": 20,
-    "lat": 43.489222,
-    "lng": -1.474164
+    "lat": 43.4891562504,
+    "lng": -1.474085221
   },
   {
     "id": "BAB_22",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.4912102,
-    "lng": -1.4738298
+    "lat": 43.4912304882,
+    "lng": -1.4739449365
   },
   {
     "id": "BAB_23",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.492241,
-    "lng": -1.4737505
+    "lat": 43.4922498096,
+    "lng": -1.4736681488
   },
   {
     "id": "BAB_24",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.493258,
-    "lng": -1.467952
+    "lat": 43.4932096687,
+    "lng": -1.4678676824
   },
   {
     "id": "BAB_25",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.496161,
-    "lng": -1.470631
+    "lat": 43.4961584547,
+    "lng": -1.4705453286
   },
   {
     "id": "BAB_26",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.491284,
-    "lng": -1.472661
+    "lat": 43.4912198637,
+    "lng": -1.4727420548
   },
   {
     "id": "BAB_27",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.4894864,
-    "lng": -1.4720499
+    "lat": 43.4894724453,
+    "lng": -1.472062255
   },
   {
     "id": "BAB_28",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.488897,
-    "lng": -1.4726826
+    "lat": 43.4888913971,
+    "lng": -1.4726141394
   },
   {
     "id": "BAB_29",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.489671,
-    "lng": -1.47581
+    "lat": 43.4896643278,
+    "lng": -1.4758171171
   },
   {
     "id": "BAB_30",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.4897238,
-    "lng": -1.4754409
+    "lat": 43.4896955633,
+    "lng": -1.4755321763
   },
   {
     "id": "BAB_31",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.4897846,
-    "lng": -1.4745179
+    "lat": 43.4897911396,
+    "lng": -1.4745160358
   },
   {
     "id": "BAB_32",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.49274,
-    "lng": -1.475019
+    "lat": 43.4926690085,
+    "lng": -1.4749998875
   },
   {
     "id": "BAB_33",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.481659,
-    "lng": -1.563843
+    "lat": 43.4816317989,
+    "lng": -1.563731905
   },
   {
     "id": "BAB_34",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "damaged",
     "points": 40,
-    "lat": 43.426074,
-    "lng": -1.609803
+    "lat": 43.426100127,
+    "lng": -1.6097678005
   },
   {
     "id": "BAB_35",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.481231,
-    "lng": -1.562902
+    "lat": 43.4812295432,
+    "lng": -1.5628334267
   },
   {
     "id": "BAB_36",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.483444,
-    "lng": -1.568116
+    "lat": 43.4834491593,
+    "lng": -1.5681025999
   },
   {
     "id": "BAB_37",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.482942,
-    "lng": -1.560855
+    "lat": 43.482982621,
+    "lng": -1.5607461841
   },
   {
     "id": "BAB_38",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.483578,
-    "lng": -1.562451
+    "lat": 43.4835770806,
+    "lng": -1.5624594431
   },
   {
     "id": "BAB_39",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.482062,
-    "lng": -1.565579
+    "lat": 43.4820731128,
+    "lng": -1.5655610997
   },
   {
     "id": "BAB_40",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.481856,
-    "lng": -1.564951
+    "lat": 43.4818463703,
+    "lng": -1.5648433488
   },
   {
     "id": "BAB_41",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "destroyed",
     "points": 50,
-    "lat": 43.482269,
-    "lng": -1.567928
+    "lat": 43.4822129058,
+    "lng": -1.5679420834
   },
   {
     "id": "BAB_42",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.487834,
-    "lng": -1.554834
+    "lat": 43.4877871842,
+    "lng": -1.5547518704
   },
   {
     "id": "BAB_43",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.495242,
-    "lng": -1.469647
+    "lat": 43.4952493156,
+    "lng": -1.4695723044
   },
   {
     "id": "BAB_44",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.4903946,
-    "lng": -1.4685888
+    "lat": 43.4904057642,
+    "lng": -1.4685940866
   },
   {
     "id": "BAB_45",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.490586,
-    "lng": -1.474016
+    "lat": 43.4905787899,
+    "lng": -1.4739923906
   },
   {
     "id": "BAB_46",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.480972,
-    "lng": -1.55743
+    "lat": 43.4809792723,
+    "lng": -1.5574270586
   },
   {
     "id": "BAB_47",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.481877,
-    "lng": -1.556499
+    "lat": 43.4819373765,
+    "lng": -1.5564954022
   },
   {
     "id": "BAB_48",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.4803177,
-    "lng": -1.5456601
+    "lat": 43.4803312081,
+    "lng": -1.5457190913
   },
   {
     "id": "BAB_49",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.480558,
-    "lng": -1.515279
+    "lat": 43.4805551586,
+    "lng": -1.5153602378
   },
   {
     "id": "BAB_50",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "destroyed",
     "points": 50,
-    "lat": 43.528933,
-    "lng": -1.524447
+    "lat": 43.528886337,
+    "lng": -1.5243480416
   },
   {
     "id": "BAB_51",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "destroyed",
     "points": 40,
-    "lat": 43.48092,
-    "lng": -1.567263
+    "lat": 43.4808912109,
+    "lng": -1.5672834709
   },
   {
     "id": "BAB_52",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.498305,
-    "lng": -1.544091
+    "lat": 43.4983199333,
+    "lng": -1.5440582662
   },
   {
     "id": "BAB_53",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.486301,
-    "lng": -1.550384
+    "lat": 43.4863488955,
+    "lng": -1.5504339761
   },
   {
     "id": "BAB_54",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "damaged",
     "points": 40,
-    "lat": 43.432584,
-    "lng": -1.599165
+    "lat": 43.4325849928,
+    "lng": -1.5991668752
   },
   {
     "id": "BAB_55",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 40,
-    "lat": 43.462331,
-    "lng": -1.572583
+    "lat": 43.4622839243,
+    "lng": -1.5725741105
   },
   {
     "id": "BAB_56",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 50,
-    "lat": 43.483506,
-    "lng": -1.565892
+    "lat": 43.483480073,
+    "lng": -1.565872046
   },
   {
     "id": "BAB_57",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.49102,
-    "lng": -1.552229
+    "lat": 43.4909605566,
+    "lng": -1.5521832294
   },
   {
     "id": "BAB_58",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.500805,
-    "lng": -1.540894
+    "lat": 43.5007713111,
+    "lng": -1.5409637119
   },
   {
     "id": "BAB_59",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 20,
-    "lat": 43.460288,
-    "lng": -1.539773
+    "lat": 43.460341054,
+    "lng": -1.5397654636
   },
   {
     "id": "BAB_60",
     "city": "Biarritz-Anglet-Bayonne",
     "status": "ok",
     "points": 30,
-    "lat": 43.483311,
-    "lng": -1.559713
+    "lat": 43.4833086221,
+    "lng": -1.5596708691
   },
   {
     "id": "CAPF_01",
@@ -11378,16 +11438,16 @@
     "city": "Fontainebleau",
     "status": "ok",
     "points": 40,
-    "lat": 48.3347541654,
-    "lng": 2.7477114808
+    "lat": 48.3160041654,
+    "lng": 2.7717314839
   },
   {
     "id": "FTBL_27",
     "city": "Fontainebleau",
     "status": "ok",
     "points": 30,
-    "lat": 48.3158779543,
-    "lng": 2.7716576278
+    "lat": 48.3346879543,
+    "lng": 2.7476776122
   },
   {
     "id": "FTBL_28",
@@ -12169,7 +12229,9 @@
     "id": "REUN_09",
     "city": "La Réunion",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": -21.1387814069,
+    "lng": 55.2948917197
   },
   {
     "id": "REUN_10",
@@ -13840,8 +13902,8 @@
     "city": "Montpellier",
     "status": "ok",
     "points": 10,
-    "lat": 43.3990491,
-    "lng": 3.6979533
+    "lat": 43.3990475195,
+    "lng": 3.697851272
   },
   {
     "id": "MPL_38",
@@ -13951,73 +14013,97 @@
     "id": "ORLN_01",
     "city": "Orléans",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 47.9050688259,
+    "lng": 1.9045905654
   },
   {
     "id": "ORLN_02",
     "city": "Orléans",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 47.9019937281,
+    "lng": 1.9028980825
   },
   {
     "id": "ORLN_03",
     "city": "Orléans",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 47.9003825956,
+    "lng": 1.9009345197
   },
   {
     "id": "ORLN_04",
     "city": "Orléans",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 47.8984714066,
+    "lng": 1.9048484765
   },
   {
     "id": "ORLN_05",
     "city": "Orléans",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 47.8999558741,
+    "lng": 1.9062982053
   },
   {
     "id": "ORLN_06",
     "city": "Orléans",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 47.8990089525,
+    "lng": 1.9069437907
   },
   {
     "id": "ORLN_07",
     "city": "Orléans",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 47.9002205304,
+    "lng": 1.9101148343
   },
   {
     "id": "ORLN_08",
     "city": "Orléans",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 47.9009032018,
+    "lng": 1.909099823
   },
   {
     "id": "ORLN_09",
     "city": "Orléans",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 47.898890858,
+    "lng": 1.9208100273
   },
   {
     "id": "ORLN_10",
     "city": "Orléans",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 47.8990299674,
+    "lng": 1.911433323
   },
   {
     "id": "ORLN_11",
     "city": "Orléans",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 47.899074935,
+    "lng": 1.9094522227
   },
   {
     "id": "ORLN_12",
     "city": "Orléans",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 47.8988340469,
+    "lng": 1.9032692863
   },
   {
     "id": "PA_01",
@@ -19648,8 +19734,8 @@
     "city": "Paris",
     "status": "ok",
     "points": 30,
-    "lat": 48.8522776861,
-    "lng": 2.3649611338
+    "lat": 48.8520281228,
+    "lng": 2.3658065025
   },
   {
     "id": "PA_705",
@@ -24632,16 +24718,16 @@
     "city": "Paris",
     "status": "ok",
     "points": 30,
-    "lat": 48.8750669678,
-    "lng": 2.3519086826
+    "lat": 48.8766296874,
+    "lng": 2.3515350075
   },
   {
     "id": "PA_1328",
     "city": "Paris",
     "status": "ok",
     "points": 50,
-    "lat": 48.8766587196,
-    "lng": 2.3514123211
+    "lat": 48.8750426874,
+    "lng": 2.3519410027
   },
   {
     "id": "PA_1329",
@@ -26216,284 +26302,352 @@
     "city": "Paris",
     "status": "ok",
     "points": 100,
-    "lat": 48.831308,
-    "lng": 2.353958
+    "lat": 48.8312959713,
+    "lng": 2.3538745918
   },
   {
     "id": "PA_1526",
     "city": "Paris",
     "status": "ok",
     "points": 20,
-    "lat": 48.8465455024537,
-    "lng": 2.30558849818537
+    "lat": 48.8465313344,
+    "lng": 2.3056403812
   },
   {
     "id": "PA_1527",
     "city": "Paris",
     "status": "ok",
     "points": 20,
-    "lat": 48.8474061822236,
-    "lng": 2.28605998784266
+    "lat": 48.8475216138,
+    "lng": 2.2861330421
   },
   {
     "id": "PA_1528",
     "city": "Paris",
     "status": "ok",
     "points": 30,
-    "lat": 48.8607968286249,
-    "lng": 2.35574056838356
+    "lat": 48.8608067084,
+    "lng": 2.3558496401
   },
   {
     "id": "PA_1529",
     "city": "Paris",
     "status": "ok",
     "points": 50,
-    "lat": 48.8579829,
-    "lng": 2.355933
+    "lat": 48.8579147766,
+    "lng": 2.3558801278
   },
   {
     "id": "PA_1530",
     "city": "Paris",
     "status": "ok",
     "points": 40,
-    "lat": 48.8615162,
-    "lng": 2.3635363
+    "lat": 48.8615534219,
+    "lng": 2.3636505631
   },
   {
     "id": "PA_1531",
     "city": "Paris",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 48.8440082916,
+    "lng": 2.3425139302
   },
   {
     "id": "PA_1532",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8542960837,
+    "lng": 2.368608522
   },
   {
     "id": "PA_1533",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8432993725,
+    "lng": 2.3044820964
   },
   {
     "id": "PA_1534",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8402424608,
+    "lng": 2.2950642875
   },
   {
     "id": "PA_1535",
     "city": "Paris",
     "status": "ok",
-    "points": 100
+    "points": 100,
+    "lat": 48.8366554936,
+    "lng": 2.3561688335
   },
   {
     "id": "PA_1536",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8705134989,
+    "lng": 2.3419393307
   },
   {
     "id": "PA_1537",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.870705805,
+    "lng": 2.3416013126
   },
   {
     "id": "PA_1538",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8315196045,
+    "lng": 2.3296639631
   },
   {
     "id": "PA_1539",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8487914076,
+    "lng": 2.3405429225
   },
   {
     "id": "PA_1540",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.833679224,
+    "lng": 2.3177820703
   },
   {
     "id": "PA_1541",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8322819121,
+    "lng": 2.3208594236
   },
   {
     "id": "PA_1542",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8717048709,
+    "lng": 2.3291535566
   },
   {
     "id": "PA_1543",
     "city": "Paris",
     "status": "destroyed",
-    "points": 30
+    "points": 30,
+    "lat": 48.8714375907,
+    "lng": 2.3291992666
   },
   {
     "id": "PA_1544",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8549284657,
+    "lng": 2.3293777094
   },
   {
     "id": "PA_1545",
     "city": "Paris",
     "status": "ok",
     "points": 10,
-    "lat": 48.8502277,
-    "lng": 2.3489964
+    "lat": 48.8503142935,
+    "lng": 2.3490147304
   },
   {
     "id": "PA_1546",
     "city": "Paris",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 48.8724114011,
+    "lng": 2.3264141732
   },
   {
     "id": "PA_1547",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8863960501,
+    "lng": 2.3223772631
   },
   {
     "id": "PA_1548",
     "city": "Paris",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 48.8895674282,
+    "lng": 2.3264791592
   },
   {
     "id": "PA_1549",
     "city": "Paris",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 48.8616510687,
+    "lng": 2.3824279384
   },
   {
     "id": "PA_1550",
     "city": "Paris",
     "status": "ok",
     "points": 20,
-    "lat": 48.8523836,
-    "lng": 2.3433292
+    "lat": 48.8524491169,
+    "lng": 2.3433348292
   },
   {
     "id": "PA_1551",
     "city": "Paris",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 48.8501049213,
+    "lng": 2.3497032673
   },
   {
     "id": "PA_1552",
     "city": "Paris",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 48.8615420385,
+    "lng": 2.3564783942
   },
   {
     "id": "PA_1553",
     "city": "Paris",
     "status": "ok",
     "points": 50,
-    "lat": 48.863147,
-    "lng": 2.3515415
+    "lat": 48.8631945777,
+    "lng": 2.3515590171
   },
   {
     "id": "PA_1554",
     "city": "Paris",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 48.8464088979,
+    "lng": 2.3923221099
   },
   {
     "id": "PA_1555",
     "city": "Paris",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 48.8506130853,
+    "lng": 2.4063260996
   },
   {
     "id": "PA_1556",
     "city": "Paris",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 48.8853071587,
+    "lng": 2.3446185316
   },
   {
     "id": "PA_1557",
     "city": "Paris",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 48.8558601979,
+    "lng": 2.340363352
   },
   {
     "id": "PA_1558",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8523684557,
+    "lng": 2.3549506132
   },
   {
     "id": "PA_1559",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8446484513,
+    "lng": 2.3495862568
   },
   {
     "id": "PA_1560",
     "city": "Paris",
     "status": "ok",
     "points": 50,
-    "lat": 48.8434029,
-    "lng": 2.3541641
+    "lat": 48.8430084269,
+    "lng": 2.3542853573
   },
   {
     "id": "PA_1561",
     "city": "Paris",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 48.8534439981,
+    "lng": 2.3407011211
   },
   {
     "id": "PA_1562",
     "city": "Paris",
     "status": "ok",
-    "points": 100
+    "points": 100,
+    "lat": 48.8900725908,
+    "lng": 2.394279994
   },
   {
     "id": "PA_1563",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8898161298,
+    "lng": 2.3943278915
   },
   {
     "id": "PA_1564",
     "city": "Paris",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 48.8894425746,
+    "lng": 2.3935639817
   },
   {
     "id": "PA_1565",
     "city": "Paris",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 48.891697246,
+    "lng": 2.3938640229
   },
   {
     "id": "PA_1566",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.891001458,
+    "lng": 2.393889087
   },
   {
     "id": "PA_1567",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8911259133,
+    "lng": 2.3939993923
   },
   {
     "id": "PA_1568",
     "city": "Paris",
     "status": "ok",
-    "points": 100
+    "points": 100,
+    "lat": 48.890338209,
+    "lng": 2.393695082
   },
   {
     "id": "PA_1569",
@@ -27516,8 +27670,8 @@
     "city": "London",
     "status": "destroyed",
     "points": 10,
-    "lat": 51.513620467,
-    "lng": -0.1388166125
+    "lat": 51.513498467,
+    "lng": -0.1386036126
   },
   {
     "id": "LDN_32",
@@ -28548,8 +28702,8 @@
     "city": "London",
     "status": "ok",
     "points": 30,
-    "lat": 51.5140507903,
-    "lng": -0.1244930017
+    "lat": 51.5174774367,
+    "lng": -0.1159509086
   },
   {
     "id": "LDN_161",
@@ -28571,187 +28725,249 @@
     "id": "LDN_163",
     "city": "London",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 51.5119560272,
+    "lng": -0.1350373469
   },
   {
     "id": "LDN_164",
     "city": "London",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 51.4933875046,
+    "lng": -0.116923429
   },
   {
     "id": "LDN_165",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5193260416,
+    "lng": -0.1330843321
   },
   {
     "id": "LDN_166",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5129690281,
+    "lng": -0.1337609785
   },
   {
     "id": "LDN_167",
     "city": "London",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 51.5164448871,
+    "lng": -0.0751953758
   },
   {
     "id": "LDN_168",
     "city": "London",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 51.5180419037,
+    "lng": -0.0796047405
   },
   {
     "id": "LDN_169",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.522238886,
+    "lng": -0.087068451
   },
   {
     "id": "LDN_170",
     "city": "London",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 51.5268892315,
+    "lng": -0.0806275168
   },
   {
     "id": "LDN_171",
     "city": "London",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 51.5214668777,
+    "lng": -0.075589152
   },
   {
     "id": "LDN_172",
     "city": "London",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 51.5279273593,
+    "lng": -0.0765606081
   },
   {
     "id": "LDN_173",
     "city": "London",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 51.5239130231,
+    "lng": -0.1584199307
   },
   {
     "id": "LDN_174",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5219578477,
+    "lng": -0.1572158791
   },
   {
     "id": "LDN_175",
     "city": "London",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 51.5193759204,
+    "lng": -0.1170562599
   },
   {
     "id": "LDN_176",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5229249182,
+    "lng": -0.1247071646
   },
   {
     "id": "LDN_177",
     "city": "London",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 51.5224498099,
+    "lng": -0.1327831177
   },
   {
     "id": "LDN_178",
     "city": "London",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 51.520898588,
+    "lng": -0.1349277436
   },
   {
     "id": "LDN_179",
     "city": "London",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 51.5170183724,
+    "lng": -0.127192568
   },
   {
     "id": "LDN_180",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5113137307,
+    "lng": -0.1342975244
   },
   {
     "id": "LDN_181",
     "city": "London",
     "status": "destroyed",
-    "points": 30
+    "points": 30,
+    "lat": 51.5009188245,
+    "lng": -0.1182947125
   },
   {
     "id": "LDN_182",
     "city": "London",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 51.5002137923,
+    "lng": -0.1150656474
   },
   {
     "id": "LDN_183",
     "city": "London",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 51.5022079776,
+    "lng": -0.1163014597
   },
   {
     "id": "LDN_184",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5063778419,
+    "lng": -0.1461555096
   },
   {
     "id": "LDN_185",
     "city": "London",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 51.5070794593,
+    "lng": -0.1282298213
   },
   {
     "id": "LDN_186",
     "city": "London",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 51.5102766078,
+    "lng": -0.1257547362
   },
   {
     "id": "LDN_187",
     "city": "London",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 51.5104793795,
+    "lng": -0.1237724693
   },
   {
     "id": "LDN_188",
     "city": "London",
     "status": "ok",
-    "points": 100
+    "points": 100,
+    "lat": 51.5060810277,
+    "lng": -0.1145038247
   },
   {
     "id": "LDN_189",
     "city": "London",
     "status": "ok",
-    "points": 40
+    "points": 40,
+    "lat": 51.5134532875,
+    "lng": -0.1348882008
   },
   {
     "id": "LDN_190",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5119849662,
+    "lng": -0.1313811739
   },
   {
     "id": "LDN_191",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5143224624,
+    "lng": -0.1367992876
   },
   {
     "id": "LDN_192",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5158409221,
+    "lng": -0.1361856514
   },
   {
     "id": "LDN_193",
     "city": "London",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 51.5158067285,
+    "lng": -0.1361853621
   },
   {
     "id": "MAN_01",
@@ -28774,8 +28990,8 @@
     "city": "Manchester",
     "status": "damaged",
     "points": 20,
-    "lat": 53.4836597123,
-    "lng": -2.2348849055
+    "lat": 53.4838107123,
+    "lng": -2.234694905
   },
   {
     "id": "MAN_04",
@@ -29246,8 +29462,8 @@
     "city": "Newcastle",
     "status": "ok",
     "points": 30,
-    "lat": 54.9742980042,
-    "lng": -1.6007610155
+    "lat": 54.9714700042,
+    "lng": -1.6071500078
   },
   {
     "id": "NCL_16",
@@ -29286,8 +29502,8 @@
     "city": "Newcastle",
     "status": "ok",
     "points": 30,
-    "lat": 54.962210654,
-    "lng": -1.6039343874
+    "lat": 54.961575654,
+    "lng": -1.6046683855
   },
   {
     "id": "NCL_21",
@@ -31867,7 +32083,9 @@
     "id": "KAT_19",
     "city": "Katmandou",
     "status": "destroyed",
-    "points": 10
+    "points": 10,
+    "lat": 27.714144703,
+    "lng": 85.2966470046
   },
   {
     "id": "KAT_20",
