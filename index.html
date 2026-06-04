@@ -1510,15 +1510,17 @@ async function loadMLAssets() {
   if (_mlLoadStart) return;
   _mlLoadStart = true;
   try {
-    const modelFile = 'https://github.com/iltommi/invader-hunter/releases/download/v1.0/clip_visual_q.onnx';
-
-    const [modelBuf, embBuf, idsJson] = await Promise.all([
-      fetch(modelFile).then(r => r.arrayBuffer()),
+    const [part0, part1, embBuf, idsJson] = await Promise.all([
+      fetch('model.part0').then(r => r.arrayBuffer()),
+      fetch('model.part1').then(r => r.arrayBuffer()),
       fetch('embeddings.bin').then(r => r.arrayBuffer()),
       fetch('ids.json').then(r => r.json()),
     ]);
 
-    _ortSession = await ort.InferenceSession.create(modelBuf);
+    const model = new Uint8Array(part0.byteLength + part1.byteLength);
+    model.set(new Uint8Array(part0), 0);
+    model.set(new Uint8Array(part1), part0.byteLength);
+    _ortSession = await ort.InferenceSession.create(model.buffer);
     _embMatrix  = new Float32Array(embBuf);
     _embIds     = idsJson;
     _mlReady    = true;

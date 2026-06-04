@@ -2,3 +2,4 @@ ml/
 clip_visual.onnx
 clip_visual.onnx.data
 clip_visual_q.onnx
+# model.part0 and model.part1 are intentionally committed
