@@ -1474,9 +1474,7 @@ async function loadMLAssets() {
   if (_mlLoadStart) return;
   _mlLoadStart = true;
   try {
-    const modelFile = await fetch('clip_visual_q.onnx', {method:'HEAD'})
-      .then(r => r.ok ? 'clip_visual_q.onnx' : 'clip_visual.onnx')
-      .catch(() => 'clip_visual.onnx');
+    const modelFile = 'https://github.com/iltommi/invader-hunter/releases/download/v1.0/clip_visual_q.onnx';
 
     const [modelBuf, embBuf, idsJson] = await Promise.all([
       fetch(modelFile).then(r => r.arrayBuffer()),
