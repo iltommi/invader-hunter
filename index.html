@@ -256,6 +256,31 @@
   #photo-download-btn { background:var(--green);  color:#000; }
   #photo-close-btn    { background:transparent; color:#888; border:1px solid #444 !important; }
 
+  /* ── PERSPECTIVE CORRECTION ── */
+  #correct-modal {
+    display:none; position:fixed; inset:0; z-index:9100;
+    background:#000;
+    flex-direction:column; align-items:center; justify-content:center;
+    gap:12px; padding:12px;
+  }
+  #correct-modal.open { display:flex; }
+  #correct-hint {
+    font-family:'Share Tech Mono',monospace; font-size:11px; color:#888;
+    text-align:center;
+  }
+  #correct-canvas { max-width:100%; max-height:78vh; touch-action:none; cursor:crosshair; }
+  #correct-actions { display:flex; gap:12px; }
+  #correct-apply-btn {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 18px; border:none; border-radius:2px; cursor:pointer;
+    background:var(--cyan); color:#000;
+  }
+  #correct-skip-btn {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 18px; border-radius:2px; cursor:pointer;
+    background:transparent; color:#888; border:1px solid #444;
+  }
+
   /* ── LOADER ── */
   #loader {
     position:fixed; inset:0; background:var(--bg); z-index:9999;
@@ -405,6 +430,15 @@
 </style>
 </head>
 <body>
+
+<div id="correct-modal">
+  <div id="correct-hint">Drag corners to align with the invader</div>
+  <canvas id="correct-canvas"></canvas>
+  <div id="correct-actions">
+    <button id="correct-apply-btn">✓ Apply</button>
+    <button id="correct-skip-btn">Skip</button>
+  </div>
+</div>
 
 <div id="photo-modal">
   <img id="photo-preview" alt="">
@@ -882,6 +916,191 @@ function buildPopup(p) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// PERSPECTIVE CORRECTION
+// ─────────────────────────────────────────────────────────────
+
+// Solve 8×8 linear system via Gaussian elimination (for homography DLT)
+function gaussSolve(A, b) {
+  const n = b.length;
+  const M = A.map((r, i) => [...r, b[i]]);
+  for (let c = 0; c < n; c++) {
+    let mx = c;
+    for (let r = c+1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[mx][c])) mx = r;
+    [M[c], M[mx]] = [M[mx], M[c]];
+    for (let r = c+1; r < n; r++) {
+      const f = M[r][c] / M[c][c];
+      for (let j = c; j <= n; j++) M[r][j] -= f * M[c][j];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n-1; i >= 0; i--) {
+    x[i] = M[i][n];
+    for (let j = i+1; j < n; j++) x[i] -= M[i][j] * x[j];
+    x[i] /= M[i][i];
+  }
+  return x;
+}
+
+// Compute 3×3 homography from 4 src→dst point pairs (DLT algorithm)
+function getHomography(src, dst) {
+  const A = [], b = [];
+  for (let i = 0; i < 4; i++) {
+    const [sx, sy] = src[i], [dx, dy] = dst[i];
+    A.push([-sx,-sy,-1, 0,  0,  0, dx*sx, dx*sy]); b.push(-dx);
+    A.push([ 0,  0,  0,-sx,-sy,-1, dy*sx, dy*sy]); b.push(-dy);
+  }
+  const h = gaussSolve(A, b);
+  return [[h[0],h[1],h[2]],[h[3],h[4],h[5]],[h[6],h[7],1]];
+}
+
+// Perspective warp: src ImageData → OUT×OUT ImageData using 4 quad corners in src space
+function warpPerspective(srcData, srcW, srcH, corners, OUT = 512) {
+  const dst = [[0,0],[OUT,0],[OUT,OUT],[0,OUT]];
+  const H   = getHomography(dst, corners); // inverse warp: dst→src
+  const out  = new ImageData(OUT, OUT);
+  const sd   = srcData.data, od = out.data;
+  for (let dy = 0; dy < OUT; dy++) {
+    for (let dx = 0; dx < OUT; dx++) {
+      const w  = H[2][0]*dx + H[2][1]*dy + H[2][2];
+      const sx = (H[0][0]*dx + H[0][1]*dy + H[0][2]) / w;
+      const sy = (H[1][0]*dx + H[1][1]*dy + H[1][2]) / w;
+      const x0 = Math.floor(sx), y0 = Math.floor(sy);
+      const x1 = x0+1,           y1 = y0+1;
+      if (x0 < 0 || y0 < 0 || x1 >= srcW || y1 >= srcH) continue;
+      const fx = sx-x0, fy = sy-y0;
+      const i00=(y0*srcW+x0)*4, i10=(y0*srcW+x1)*4;
+      const i01=(y1*srcW+x0)*4, i11=(y1*srcW+x1)*4;
+      const oi = (dy*OUT+dx)*4;
+      for (let c = 0; c < 3; c++)
+        od[oi+c] = (sd[i00+c]*(1-fx)*(1-fy) + sd[i10+c]*fx*(1-fy)
+                  + sd[i01+c]*(1-fx)*fy     + sd[i11+c]*fx*fy) | 0;
+      od[oi+3] = 255;
+    }
+  }
+  return out;
+}
+
+// ── Correction modal state ──
+let _correctImg   = null;  // HTMLImageElement of the captured photo
+let _correctScale = 1;     // ratio: canvas-coords → original-image-coords
+let _corners      = [];    // 4 corners in canvas coords [[x,y],…]
+let _dragIdx      = -1;    // which corner is being dragged
+
+function showCorrectionModal(imgEl) {
+  _correctImg = imgEl;
+  const modal  = document.getElementById('correct-modal');
+  const canvas = document.getElementById('correct-canvas');
+
+  // Fit canvas to screen
+  const maxW = window.innerWidth  * 0.96;
+  const maxH = window.innerHeight * 0.76;
+  const scale = Math.min(maxW / imgEl.naturalWidth, maxH / imgEl.naturalHeight);
+  canvas.width  = Math.round(imgEl.naturalWidth  * scale);
+  canvas.height = Math.round(imgEl.naturalHeight * scale);
+  _correctScale = imgEl.naturalWidth / canvas.width;
+
+  // Init corners at image edges (inset 10%)
+  const m = 0.1;
+  _corners = [
+    [canvas.width*m,          canvas.height*m],
+    [canvas.width*(1-m),      canvas.height*m],
+    [canvas.width*(1-m),      canvas.height*(1-m)],
+    [canvas.width*m,          canvas.height*(1-m)],
+  ];
+  drawCorrection();
+  modal.classList.add('open');
+}
+
+function drawCorrection() {
+  const canvas = document.getElementById('correct-canvas');
+  const ctx    = canvas.getContext('2d');
+  ctx.drawImage(_correctImg, 0, 0, canvas.width, canvas.height);
+
+  // Quad outline
+  ctx.beginPath();
+  ctx.moveTo(..._corners[0]);
+  for (let i = 1; i < 4; i++) ctx.lineTo(..._corners[i]);
+  ctx.closePath();
+  ctx.strokeStyle = 'rgba(0,245,255,0.85)';
+  ctx.lineWidth   = 2;
+  ctx.stroke();
+
+  // Corner handles
+  _corners.forEach(([x,y]) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI*2);
+    ctx.fillStyle   = 'rgba(0,245,255,0.3)';
+    ctx.strokeStyle = '#00f5ff';
+    ctx.lineWidth   = 2;
+    ctx.fill(); ctx.stroke();
+  });
+}
+
+function correctPointerPos(e, canvas) {
+  const r  = canvas.getBoundingClientRect();
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+  // Scale from CSS display size to canvas resolution
+  return [cx * canvas.width / r.width, cy * canvas.height / r.height];
+}
+
+(function initCorrectionEvents() {
+  const canvas = document.getElementById('correct-canvas');
+  const RADIUS = 24;
+
+  function onStart(e) {
+    e.preventDefault();
+    const [px, py] = correctPointerPos(e, canvas);
+    _dragIdx = _corners.reduce((best, [cx,cy], i) => {
+      const d = Math.hypot(px-cx, py-cy);
+      return d < RADIUS && d < (best.d ?? Infinity) ? {i, d} : best;
+    }, {}).i ?? -1;
+  }
+  function onMove(e) {
+    if (_dragIdx < 0) return;
+    e.preventDefault();
+    _corners[_dragIdx] = correctPointerPos(e, canvas);
+    drawCorrection();
+  }
+  function onEnd() { _dragIdx = -1; }
+
+  canvas.addEventListener('mousedown',  onStart);
+  canvas.addEventListener('mousemove',  onMove);
+  canvas.addEventListener('mouseup',    onEnd);
+  canvas.addEventListener('touchstart', onStart, {passive:false});
+  canvas.addEventListener('touchmove',  onMove,  {passive:false});
+  canvas.addEventListener('touchend',   onEnd);
+})();
+
+document.getElementById('correct-apply-btn').addEventListener('click', () => {
+  document.getElementById('correct-modal').classList.remove('open');
+  // Scale corners back to original image resolution
+  const srcCorners = _corners.map(([x,y]) => [x*_correctScale, y*_correctScale]);
+  const iw = _correctImg.naturalWidth, ih = _correctImg.naturalHeight;
+
+  // Draw original image to an offscreen canvas to get ImageData
+  const offscreen = document.createElement('canvas');
+  offscreen.width = iw; offscreen.height = ih;
+  offscreen.getContext('2d').drawImage(_correctImg, 0, 0);
+  const srcData = offscreen.getContext('2d').getImageData(0, 0, iw, ih);
+
+  const warped = warpPerspective(srcData, iw, ih, srcCorners, 512);
+  const warpCanvas = document.createElement('canvas');
+  warpCanvas.width = warpCanvas.height = 512;
+  warpCanvas.getContext('2d').putImageData(warped, 0, 0);
+
+  // Store warped result for the recognition pipeline, then show photo modal
+  window._warpedCanvas = warpCanvas;
+  showPhotoModal();
+});
+
+document.getElementById('correct-skip-btn').addEventListener('click', () => {
+  document.getElementById('correct-modal').classList.remove('open');
+  window._warpedCanvas = null;
+  showPhotoModal();
+});
+
+// ─────────────────────────────────────────────────────────────
 // PHOTO
 // ─────────────────────────────────────────────────────────────
 let currentPhotoPOI = null;
@@ -893,22 +1112,34 @@ function takePhoto(poiId) {
   document.getElementById('photo-input').click();
 }
 
+let _capturedImg = null;  // full-res HTMLImageElement kept until photo modal closes
+let _capturedPOI = null;
+
 document.getElementById('photo-input').addEventListener('change', async e => {
   const file = e.target.files[0];
   e.target.value = '';
   if (!file || !currentPhotoPOI) return;
-  const poi = allPOI.find(p => p.id === currentPhotoPOI);
+  _capturedPOI    = allPOI.find(p => p.id === currentPhotoPOI);
   currentPhotoPOI = null;
-  if (!poi) return;
+  if (!_capturedPOI) return;
 
   await document.fonts.ready;
-  const img = await new Promise((res, rej) => {
+  _capturedImg = await new Promise((res, rej) => {
     const url = URL.createObjectURL(file);
     const i = new Image();
     i.onload = () => { URL.revokeObjectURL(url); res(i); };
     i.onerror = rej;
     i.src = url;
   });
+
+  // Show correction modal so user can align corners before annotating
+  showCorrectionModal(_capturedImg);
+});
+
+async function showPhotoModal() {
+  const poi = _capturedPOI;
+  const img = _capturedImg;
+  if (!poi || !img) return;
 
   const canvas = document.createElement('canvas');
   canvas.width  = img.naturalWidth;
@@ -942,7 +1173,7 @@ document.getElementById('photo-input').addEventListener('change', async e => {
   const previewUrl = URL.createObjectURL(currentPhotoBlob);
   document.getElementById('photo-preview').src = previewUrl;
   document.getElementById('photo-modal').classList.add('open');
-});
+}
 
 document.getElementById('photo-share-btn').addEventListener('click', async () => {
   if (!currentPhotoBlob) return;
