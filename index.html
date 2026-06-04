@@ -775,7 +775,7 @@ function renderMapMarkers(visited = getVisited()) {
 
 function spotterUrl(id) {
   const [code, num] = id.split('_');
-  return `https://www.invader-spotter.art/grosplan/${code}/${code}_${num.padStart(3,'0')}-grosplan.png`;
+  return `https://www.invader-spotter.art/grosplan/${code}/${code}_${num.padStart(4,'0')}-grosplan.png`;
 }
 
 function buildPopup(p) {
