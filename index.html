@@ -256,6 +256,21 @@
   #photo-share-btn    { background:var(--cyan);   color:#000; }
   #photo-download-btn { background:var(--green);  color:#000; }
   #photo-close-btn    { background:transparent; color:#888; border:1px solid #444 !important; }
+  #ml-status {
+    font-family:'Share Tech Mono',monospace; font-size:10px;
+    color:var(--cyan); display:flex; align-items:center; gap:5px;
+    opacity:1; transition:opacity 1.5s ease;
+  }
+  #ml-status.hidden { opacity:0; pointer-events:none; }
+  #ml-status .ml-dot {
+    width:7px; height:7px; border-radius:50%; background:var(--cyan); flex-shrink:0;
+  }
+  #ml-status .ml-dot.pulsing {
+    animation:ml-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes ml-pulse {
+    0%,100% { opacity:1; } 50% { opacity:.2; }
+  }
   #ml-results {
     font-family:'Share Tech Mono',monospace; font-size:11px;
     color:var(--text); text-align:center; min-height:18px;
@@ -482,6 +497,7 @@
   <div class="topbar-sep"></div>
   <button class="filter-btn active" id="btn-cycle" onclick="cycleFilter()">Unflashed</button>
   <div class="ml-auto">
+    <div id="ml-status"><div class="ml-dot pulsing"></div>AI loading…</div>
     <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
     <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
@@ -1470,6 +1486,16 @@ let _embIds      = null;   // string[]
 let _mlReady     = false;
 let _mlLoadStart = false;
 
+function _mlSetStatus(text, ready) {
+  const el  = document.getElementById('ml-status');
+  const dot = el.querySelector('.ml-dot');
+  el.classList.remove('hidden');
+  dot.classList.toggle('pulsing', !ready);
+  dot.style.background = ready ? 'var(--green)' : 'var(--cyan)';
+  el.childNodes[1].textContent = text;
+  if (ready) setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
 async function loadMLAssets() {
   if (_mlLoadStart) return;
   _mlLoadStart = true;
@@ -1486,8 +1512,10 @@ async function loadMLAssets() {
     _embMatrix  = new Float32Array(embBuf);
     _embIds     = idsJson;
     _mlReady    = true;
+    _mlSetStatus('AI ready', true);
   } catch(e) {
     console.warn('ML assets not available:', e.message);
+    document.getElementById('ml-status').classList.add('hidden');
   }
 }
 
