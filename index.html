@@ -855,7 +855,7 @@ function buildPopup(p) {
   div.className = 'popup-body';
   div.innerHTML = `
     <div class="popup-id">${p.id}</div>
-    <div class="popup-row">${[p.city, `<span style="color:${color}">${p.status||'ok'}</span>`, p.points ? p.points+' pts' : null].filter(Boolean).join(', ')}</div>
+    <div class="popup-row">${[p.city, p.status&&p.status!=='ok' ? `<span style="color:${color}">${p.status}</span>` : null, p.points ? p.points+' pts' : null].filter(Boolean).join(', ')}</div>
     <a href="${spotterUrl(p.id)}" target="_blank" rel="noopener">
       <img class="popup-spotter-img" src="${spotterUrl(p.id)}" alt="${p.id}" loading="lazy"
            onerror="this.outerHTML='<a class=\\'popup-search-link\\' href=\\'${spotterUrl(p.id)}\\' target=\\'_blank\\' rel=\\'noopener\\'>🕹 Invader Spotter</a>'">
