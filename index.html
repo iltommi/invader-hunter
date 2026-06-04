@@ -296,10 +296,15 @@
     border:1px solid var(--border); border-radius:2px;
     cursor:pointer;
   }
-  .popup-btn {
-    margin-top:10px; width:100%; padding:8px; font-family:'Press Start 2P',monospace;
-    font-size:7px; border:none; cursor:pointer; border-radius:2px; transition:all .15s;
+  .popup-actions {
+    display:flex; gap:12px; align-items:center; margin-top:10px;
   }
+  .popup-action {
+    background:transparent; border:none; cursor:pointer;
+    font-size:22px; line-height:1; padding:2px;
+    transition:opacity .15s; text-decoration:none;
+  }
+  .popup-action:hover { opacity:.6; }
 
   /* ── LOCATION ── */
   #fab-locate {
@@ -860,21 +865,17 @@ function buildPopup(p) {
       <img class="popup-spotter-img" src="${spotterUrl(p.id)}" alt="${p.id}" loading="lazy"
            onerror="this.outerHTML='<a class=\\'popup-search-link\\' href=\\'${spotterUrl(p.id)}\\' target=\\'_blank\\' rel=\\'noopener\\'>🕹 Invader Spotter</a>'">
     </a>
-    <a class="popup-search-link" href="https://www.google.com/search?q=${encodeURIComponent(p.id + ' invader')}&tbm=isch" target="_blank" rel="noopener">🔍 Google Images</a>
-    <button class="popup-btn" id="pbtn-${p.id}"
-      style="background:${isV?'#ff8c00':'var(--green)'};color:#000;border:none">
-      ${isV ? '✓ FLASHED' : '⚡ FLASH IT'}
-    </button>
-    <button class="popup-btn" id="photo-btn-${p.id}"
-      style="background:var(--purple);color:#fff;border:none;margin-top:6px">
-      📷 Photo
-    </button>`;
+    <div class="popup-actions">
+      <button class="popup-action" id="pbtn-${p.id}" title="${isV?'Flashed':'Flash it'}">${isV?'✅':'⚡'}</button>
+      <button class="popup-action" id="photo-btn-${p.id}" title="Photo">📷</button>
+      <a class="popup-action" href="https://www.google.com/search?q=${encodeURIComponent(p.id+' invader')}&tbm=isch" target="_blank" rel="noopener" title="Google Images">🔍</a>
+    </div>`;
   div.querySelector(`#pbtn-${p.id}`).addEventListener('click', () => {
     toggleVisited(p.id);
     const isNowV = !!getVisited()[p.id];
     const btn = div.querySelector(`#pbtn-${p.id}`);
-    btn.style.background = isNowV ? '#ff8c00' : 'var(--green)';
-    btn.textContent = isNowV ? '✓ FLASHED' : '⚡ FLASH IT';
+    btn.textContent = isNowV ? '✅' : '⚡';
+    btn.title = isNowV ? 'Flashed' : 'Flash it';
   });
   div.querySelector(`#photo-btn-${p.id}`).addEventListener('click', () => takePhoto(p.id));
   return div;
