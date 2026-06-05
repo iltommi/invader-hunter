@@ -290,10 +290,22 @@
     font-family:'Share Tech Mono',monospace; font-size:11px;
     color:var(--text); text-align:center; min-height:18px;
   }
-  #ml-results .ml-hit  { color:var(--green); font-weight:bold; }
-  #ml-results .ml-list { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:4px; }
-  #ml-results .ml-item { color:var(--cyan); cursor:pointer; }
-  #ml-results .ml-item:hover { text-decoration:underline; }
+  #ml-results .ml-hit { color:var(--green); font-weight:bold; }
+  #ml-results .ml-thumb-strip {
+    display:flex; overflow-x:auto; gap:8px; margin-top:8px; padding-bottom:4px;
+    max-width:min(90vw,500px); scrollbar-width:thin;
+  }
+  #ml-results .ml-thumb {
+    flex-shrink:0; cursor:pointer; text-align:center; transition:opacity .15s;
+  }
+  #ml-results .ml-thumb:hover { opacity:.75; }
+  #ml-results .ml-thumb img {
+    width:80px; height:80px; object-fit:cover;
+    border-radius:2px; border:2px solid var(--cyan); display:block;
+  }
+  #ml-results .ml-thumb-label {
+    font-size:9px; color:var(--cyan); margin-top:3px; line-height:1.4;
+  }
 
   /* ── PERSPECTIVE CORRECTION ── */
   #correct-modal {
@@ -1290,6 +1302,7 @@ document.getElementById('photo-close-btn').addEventListener('click', () => {
   URL.revokeObjectURL(document.getElementById('photo-preview').src);
   document.getElementById('photo-preview').src = '';
   document.getElementById('ml-results').textContent = '';
+  _revokeThumbUrls();
   window._searchCanvas = null;
   currentPhotoBlob = currentPhotoFname = null;
 });
@@ -1312,11 +1325,14 @@ const STATUS_ICON = { ok:'👾', damaged:'⚠️', destroyed:'💀', hidden:'�
 function renderList(visited = getVisited()) {
   const list = document.getElementById('poi-list');
 
-  let visible = filteredPOI;
-  if (leafletMap) {
-    const bounds = leafletMap.getBounds();
-    visible = filteredPOI.filter(p => p.lat && p.lng && bounds.contains([p.lat, p.lng]));
-  }
+  const search = document.getElementById('search').value.trim().toUpperCase();
+  const bounds = leafletMap ? leafletMap.getBounds() : null;
+  const visible = allPOI.filter(p => {
+    if (search && !(p.id || '').toUpperCase().includes(search)) return false;
+    if (!p.lat || !p.lng) return false;
+    if (bounds && !bounds.contains([p.lat, p.lng])) return false;
+    return true;
+  });
 
   document.getElementById('list-count').textContent = `(${visible.length})`;
 
@@ -1530,6 +1546,24 @@ let _embMatrix   = null;   // Float32Array [N × 512]
 let _embIds      = null;   // string[]
 let _mlReady     = false;
 let _mlLoadStart = false;
+let _thumbBin    = null;   // Uint8Array — packed JPEG data
+let _thumbIdx    = null;   // Uint32Array — [offset, length] pairs, one per embedding
+let _thumbUrls   = [];     // blob URLs created for the current result, revoked on next search
+
+function _getThumbUrl(embIdx) {
+  if (!_thumbBin || !_thumbIdx) return null;
+  const offset = _thumbIdx[embIdx * 2];
+  const length = _thumbIdx[embIdx * 2 + 1];
+  if (!length) return null;
+  const url = URL.createObjectURL(new Blob([_thumbBin.subarray(offset, offset + length)], {type: 'image/jpeg'}));
+  _thumbUrls.push(url);
+  return url;
+}
+
+function _revokeThumbUrls() {
+  _thumbUrls.forEach(u => URL.revokeObjectURL(u));
+  _thumbUrls = [];
+}
 
 function _mlSetStatus(text, state) {
   const el  = document.getElementById('ml-status');
@@ -1551,11 +1585,13 @@ async function loadMLAssets() {
   _mlLoadStart = true;
   _mlSetStatus('AI loading…', 'loading');
   try {
-    const [part0, part1, embBuf, idsJson] = await Promise.all([
+    const [part0, part1, embBuf, idsJson, thumbBuf, thumbIdxBuf] = await Promise.all([
       fetch('model.part0').then(r => r.arrayBuffer()),
       fetch('model.part1').then(r => r.arrayBuffer()),
       fetch('embeddings.bin').then(r => r.arrayBuffer()),
       fetch('ids.json').then(r => r.json()),
+      fetch('thumbs.bin').then(r => r.arrayBuffer()),
+      fetch('thumbs_idx.bin').then(r => r.arrayBuffer()),
     ]);
 
     const model = new Uint8Array(part0.byteLength + part1.byteLength);
@@ -1564,6 +1600,8 @@ async function loadMLAssets() {
     _ortSession = await ort.InferenceSession.create(model.buffer);
     _embMatrix  = new Float32Array(embBuf);
     _embIds     = idsJson;
+    _thumbBin   = new Uint8Array(thumbBuf);
+    _thumbIdx   = new Uint32Array(thumbIdxBuf);
     _mlReady    = true;
     _mlSetStatus('AI ready', 'ready');
   } catch(e) {
@@ -1591,6 +1629,7 @@ async function runMLSearch(canvas, top = 5) {
   const el = document.getElementById('ml-results');
   if (!_mlReady) { el.textContent = ''; return; }
 
+  _revokeThumbUrls();
   el.textContent = 'identifying…';
   try {
     const tensor  = new ort.Tensor('float32', _preprocessCanvas(canvas), [1, 3, 224, 224]);
@@ -1610,10 +1649,19 @@ async function runMLSearch(canvas, top = 5) {
     const best = _embIds[idx[0]];
     el.innerHTML =
       `<span class="ml-hit">best match: ${best}</span>` +
-      `<div class="ml-list">` +
-      idx.map(i =>
-        `<span class="ml-item" onclick="selectPOI('${_embIds[i]}')">${_embIds[i]} ${(scores[i]*100).toFixed(0)}%</span>`
-      ).join('') +
+      `<div class="ml-thumb-strip">` +
+      idx.map(i => {
+        const pid    = _embIds[i];
+        const pct    = (scores[i] * 100).toFixed(0);
+        const thumbUrl = _getThumbUrl(i);
+        const imgTag = thumbUrl
+          ? `<img src="${thumbUrl}">`
+          : `<div style="width:80px;height:80px;background:#1a2030;border-radius:2px;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:18px">👾</div>`;
+        return `<div class="ml-thumb" onclick="selectPOI('${escId(pid)}')">` +
+          imgTag +
+          `<div class="ml-thumb-label">${pid}<br>${pct}%</div>` +
+          `</div>`;
+      }).join('') +
       `</div>`;
   } catch(e) {
     el.textContent = '';
