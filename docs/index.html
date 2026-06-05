@@ -389,14 +389,14 @@
   #fab-locate {
     position: absolute;
     bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 16px; z-index: 999;
-    background: var(--surface); border: 2px solid var(--green); color: var(--green);
+    background: var(--surface); border: 2px solid var(--red); color: var(--red);
     font-family: 'Press Start 2P', monospace; font-size: 12px;
     width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
-    box-shadow: 0 0 20px rgba(57,255,20,.3); line-height: 1; flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(255,45,85,.3); line-height: 1; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     transition: all .2s; padding: 0;
   }
-  #fab-locate:hover { box-shadow: 0 0 30px rgba(57,255,20,.5); }
+  #fab-locate:hover { box-shadow: 0 0 30px rgba(255,45,85,.5); }
 
   #fab-list {
     position: absolute;
@@ -559,7 +559,7 @@
     <div class="sidebar-header" onclick="handleSidebarClick()">📡 <span class="sidebar-title">POI LIST <span id="list-count" style="color:#606080;margin-left:8px"></span></span> <span id="sheet-arrow" style="float:right;color:#606080">✕</span></div>
     <div class="poi-list" id="poi-list"></div>
   </div>
-  <button id="fab-locate" onclick="toggleLocate()" title="My location">◎</button>
+  <button id="fab-locate" onclick="toggleLocate()" title="My location">✕</button>
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
 
@@ -783,7 +783,7 @@ function initMap() {
     maxNativeZoom: 19,
   });
   window._tileLayer.addTo(leafletMap);
-  L.control.scale({ imperial: false }).addTo(leafletMap);
+  L.control.scale({ imperial: false, position: 'topright' }).addTo(leafletMap);
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius(zoom) {
@@ -1451,7 +1451,7 @@ function stopLocate() {
   if (locWatchId !== null) navigator.geolocation.clearWatch(locWatchId);
   locWatchId = null;
   document.getElementById('fab-locate').classList.remove('tracking');
-  document.getElementById('fab-locate').textContent = '◎';
+  document.getElementById('fab-locate').textContent = '✕';
   if (locMarker)    { locMarker.remove();    locMarker = null; }
   if (locAccCircle) { locAccCircle.remove(); locAccCircle = null; }
 }
