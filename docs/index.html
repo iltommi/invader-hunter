@@ -306,6 +306,8 @@
   #ml-results .ml-thumb-label {
     font-size:9px; color:var(--cyan); margin-top:3px; line-height:1.4;
   }
+  #ml-results .ml-snap-item img { border-color:var(--green); }
+  #ml-results .ml-snap-item .ml-thumb-label { color:var(--green); }
 
   /* ── PERSPECTIVE CORRECTION ── */
   #correct-modal {
@@ -1627,6 +1629,136 @@ function _preprocessCanvas(canvas) {
   return t;
 }
 
+// ─────────────────────────────────────────────────────────────
+// GRID SNAP — recover clean pixel art from rectified photo
+// ─────────────────────────────────────────────────────────────
+
+function _gsProfiles(pixels, w, h) {
+  const col = new Float32Array(w), row = new Float32Array(h);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const i = (y*w+x)*4;
+      const v = 0.299*pixels[i] + 0.587*pixels[i+1] + 0.114*pixels[i+2];
+      col[x] += v; row[y] += v;
+    }
+  for (let x = 0; x < w; x++) col[x] /= h;
+  for (let y = 0; y < h; y++) row[y] /= w;
+  return { col, row };
+}
+
+function _gsPeriod(prof, minP = 5) {
+  const n = prof.length, maxP = Math.floor(n / 3);
+  let mean = 0;
+  for (let i = 0; i < n; i++) mean += prof[i];
+  mean /= n;
+  let variance = 0;
+  for (let i = 0; i < n; i++) variance += (prof[i] - mean) ** 2;
+  variance /= n;
+  if (variance < 0.5) return { period: 0, confidence: 0 };
+  let bestP = 0, bestAC = -Infinity;
+  for (let lag = minP; lag <= maxP; lag++) {
+    let ac = 0;
+    for (let i = 0; i < n - lag; i++) ac += (prof[i] - mean) * (prof[i + lag] - mean);
+    ac /= (n - lag);
+    if (ac > bestAC) { bestAC = ac; bestP = lag; }
+  }
+  return { period: bestP, confidence: variance > 0 ? bestAC / variance : 0 };
+}
+
+function _gsPhase(prof, period) {
+  const T = Math.round(period), n = prof.length;
+  let bestPhase = 0, bestScore = Infinity;
+  for (let p = 0; p < T; p++) {
+    let score = 0;
+    for (let s = p; s < n; s += T) {
+      const e = Math.min(s + T, n), cnt = e - s;
+      let sum = 0, sum2 = 0;
+      for (let i = s; i < e; i++) { sum += prof[i]; sum2 += prof[i] * prof[i]; }
+      score += sum2 / cnt - (sum / cnt) ** 2;
+    }
+    if (score < bestScore) { bestScore = score; bestPhase = p; }
+  }
+  return bestPhase;
+}
+
+function _gsKmeans(colors, k, iters = 25) {
+  const n = colors.length;
+  const centroids = Array.from({length: k}, (_, i) => colors[Math.floor(i * n / k)].slice());
+  const assign = new Int32Array(n);
+  for (let it = 0; it < iters; it++) {
+    let changed = false;
+    for (let i = 0; i < n; i++) {
+      let best = 0, bestD = Infinity;
+      for (let c = 0; c < k; c++) {
+        const dr = colors[i][0]-centroids[c][0], dg = colors[i][1]-centroids[c][1], db = colors[i][2]-centroids[c][2];
+        const d = dr*dr + dg*dg + db*db;
+        if (d < bestD) { bestD = d; best = c; }
+      }
+      if (assign[i] !== best) { assign[i] = best; changed = true; }
+    }
+    if (!changed) break;
+    const sums = Array.from({length: k}, () => [0, 0, 0]);
+    const cnts = new Int32Array(k);
+    for (let i = 0; i < n; i++) {
+      const c = assign[i];
+      sums[c][0] += colors[i][0]; sums[c][1] += colors[i][1]; sums[c][2] += colors[i][2]; cnts[c]++;
+    }
+    for (let c = 0; c < k; c++)
+      if (cnts[c]) centroids[c] = [sums[c][0]/cnts[c], sums[c][1]/cnts[c], sums[c][2]/cnts[c]];
+  }
+  return { centroids, assign };
+}
+
+function gridSnapCanvas(src) {
+  const w = src.width, h = src.height;
+  const pixels = src.getContext('2d').getImageData(0, 0, w, h).data;
+  const { col, row } = _gsProfiles(pixels, w, h);
+
+  const { period: Tx, confidence: cx } = _gsPeriod(col);
+  const { period: Ty, confidence: cy } = _gsPeriod(row);
+  const confidence = Math.min(cx, cy);
+
+  if (confidence < 0.15 || Tx < 4 || Ty < 4) {
+    console.log(`[gridSnap] skipped — conf=${confidence.toFixed(2)} Tx=${Tx} Ty=${Ty}`);
+    return { canvas: src, confidence };
+  }
+  console.log(`[gridSnap] tile ~${Tx}×${Ty}px conf=${confidence.toFixed(2)}`);
+
+  const px = _gsPhase(col, Tx);
+  const py = _gsPhase(row, Ty);
+  const margin = Math.max(1, Math.round(Math.min(Tx, Ty) * 0.15));
+
+  const cells = [];
+  for (let gy = py; gy < h; gy += Ty)
+    for (let gx = px; gx < w; gx += Tx) {
+      const x1 = Math.min(gx + Tx, w), y1 = Math.min(gy + Ty, h);
+      let r = 0, g = 0, b = 0, cnt = 0;
+      for (let y = gy + margin; y < y1 - margin; y++)
+        for (let x = gx + margin; x < x1 - margin; x++) {
+          const i = (y*w+x)*4;
+          r += pixels[i]; g += pixels[i+1]; b += pixels[i+2]; cnt++;
+        }
+      if (cnt > 0) cells.push({ gx, gy, x1, y1, rgb: [r/cnt, g/cnt, b/cnt] });
+    }
+
+  if (cells.length < 9) return { canvas: src, confidence: 0 };
+
+  const { centroids, assign } = _gsKmeans(cells.map(c => c.rgb), 4);
+
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const oc = out.getContext('2d');
+  oc.fillStyle = '#111';
+  oc.fillRect(0, 0, w, h);
+  cells.forEach((cell, i) => {
+    const [r, g, b] = centroids[assign[i]];
+    oc.fillStyle = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+    oc.fillRect(cell.gx, cell.gy, cell.x1 - cell.gx, cell.y1 - cell.gy);
+  });
+
+  return { canvas: out, confidence };
+}
+
 async function runMLSearch(canvas, top = 5) {
   const el = document.getElementById('ml-results');
   if (!_mlReady) { el.textContent = ''; return; }
@@ -1634,7 +1766,9 @@ async function runMLSearch(canvas, top = 5) {
   _revokeThumbUrls();
   el.textContent = 'identifying…';
   try {
-    const tensor  = new ort.Tensor('float32', _preprocessCanvas(canvas), [1, 3, 224, 224]);
+    const { canvas: snapCanvas, confidence: snapConf } = gridSnapCanvas(canvas);
+    const inferCanvas = snapConf >= 0.15 ? snapCanvas : canvas;
+    const tensor  = new ort.Tensor('float32', _preprocessCanvas(inferCanvas), [1, 3, 224, 224]);
     const out     = await _ortSession.run({ pixel_values: tensor });
     const q       = out.image_embeds.data;   // Float32Array [512]
     const N       = _embIds.length;
@@ -1649,9 +1783,22 @@ async function runMLSearch(canvas, top = 5) {
       .slice(0, top);
 
     const best = _embIds[idx[0]];
+
+    let snapItem = '';
+    if (snapConf >= 0.15) {
+      const t = document.createElement('canvas');
+      t.width = t.height = 80;
+      t.getContext('2d').drawImage(snapCanvas, 0, 0, 80, 80);
+      snapItem = `<div class="ml-thumb ml-snap-item">` +
+        `<img src="${t.toDataURL('image/jpeg', 0.85)}">` +
+        `<div class="ml-thumb-label">snapped<br>grid ✓</div>` +
+        `</div>`;
+    }
+
     el.innerHTML =
       `<span class="ml-hit">best match: ${best}</span>` +
       `<div class="ml-thumb-strip">` +
+      snapItem +
       idx.map(i => {
         const pid      = _embIds[i];
         const pct      = (scores[i] * 100).toFixed(0);
