@@ -689,24 +689,40 @@ function exportTXT() {
   a.click();
 }
 
+function importFromText(text) {
+  const ids = JSON.parse(text);
+  if (!Array.isArray(ids)) throw new Error('Expected an array');
+  const incoming = Object.fromEntries(ids.map(id => [id, 1]));
+  saveVisited({ ...getVisited(), ...incoming });
+  refreshAll();
+  showToast(`✓ Imported ${ids.length} flashed invader${ids.length !== 1 ? 's' : ''}`);
+}
+
 function importTXT(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    try {
-      const ids = JSON.parse(e.target.result);
-      if (!Array.isArray(ids)) throw new Error('Expected an array');
-      const incoming = Object.fromEntries(ids.map(id => [id, 1]));
-      saveVisited({ ...getVisited(), ...incoming });
-      refreshAll();
-      showToast(`✓ Imported ${ids.length} flashed invader${ids.length !== 1 ? 's' : ''}`);
-    } catch(err) {
-      alert('Could not read file: ' + err.message);
-    }
+    try { importFromText(e.target.result); }
+    catch(err) { alert('Could not read file: ' + err.message); }
     event.target.value = '';
   };
   reader.readAsText(file);
+}
+
+async function checkSharedFile() {
+  if (!location.search.includes('from=share')) return;
+  history.replaceState({}, '', location.pathname);
+  try {
+    const cache = await caches.open('invader-share-v1');
+    const response = await cache.match('./shared-import');
+    if (!response) return;
+    const text = await response.text();
+    await cache.delete('./shared-import');
+    importFromText(text);
+  } catch(err) {
+    alert('Could not read shared file: ' + err.message);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -2019,11 +2035,13 @@ loadMLAssets();
 // ─────────────────────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────────────────────
-loadData().catch(err => {
-  document.getElementById('loader-msg').textContent = '⚠ Failed: ' + err.message;
-  document.getElementById('loader-bar').style.background = 'var(--red)';
-  document.getElementById('loader-bar').style.width = '100%';
-});
+loadData()
+  .then(checkSharedFile)
+  .catch(err => {
+    document.getElementById('loader-msg').textContent = '⚠ Failed: ' + err.message;
+    document.getElementById('loader-bar').style.background = 'var(--red)';
+    document.getElementById('loader-bar').style.width = '100%';
+  });
 </script>
 </body>
 </html>

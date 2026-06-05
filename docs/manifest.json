@@ -7,6 +7,14 @@
   "orientation": "any",
   "background_color": "#0a0a0f",
   "theme_color": "#39ff14",
+  "share_target": {
+    "action": "./share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [{ "name": "file", "accept": ["text/plain", ".txt"] }]
+    }
+  },
   "icons": [
     {
       "src": "./icon-192.png",

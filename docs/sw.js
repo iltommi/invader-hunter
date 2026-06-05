@@ -1,4 +1,5 @@
-const CACHE = 'invader-hunter-v5';
+const CACHE       = 'invader-hunter-v6';
+const SHARE_CACHE = 'invader-share-v1';
 
 const PRECACHE = [
   './index.html',
@@ -26,7 +27,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => k !== CACHE && k !== SHARE_CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -34,6 +35,23 @@ self.addEventListener('activate', e => {
 // Fetch: cache-first for app shell, network-first for tiles and POI data
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+
+  // Share Target: intercept POST from Android share sheet
+  if (url.pathname.endsWith('/share-target') && e.request.method === 'POST') {
+    e.respondWith((async () => {
+      const data = await e.request.formData();
+      const file = data.get('file');
+      if (file) {
+        const text = await file.text();
+        const cache = await caches.open(SHARE_CACHE);
+        await cache.put('./shared-import', new Response(text, {
+          headers: { 'Content-Type': 'text/plain' }
+        }));
+      }
+      return Response.redirect('./index.html?from=share', 303);
+    })());
+    return;
+  }
 
   // Map tiles: always network, no caching (too many, too large)
   if (url.hostname.includes('cartocdn.com')) {
