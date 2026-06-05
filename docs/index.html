@@ -1424,6 +1424,7 @@ let locMarker = null;
 let locAccCircle = null;
 let locWatchId = null;
 let isTracking = false;
+let userPos    = null;   // {lat, lng} updated by watchPosition
 
 function toggleLocate() {
   if (isTracking) stopLocate(); else startLocate();
@@ -1457,6 +1458,7 @@ function stopLocate() {
 
 function onLocation(pos) {
   const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+  userPos = { lat, lng };
   const latlng = [lat, lng];
 
   if (locAccCircle) {
@@ -1651,15 +1653,19 @@ async function runMLSearch(canvas, top = 5) {
       `<span class="ml-hit">best match: ${best}</span>` +
       `<div class="ml-thumb-strip">` +
       idx.map(i => {
-        const pid    = _embIds[i];
-        const pct    = (scores[i] * 100).toFixed(0);
+        const pid      = _embIds[i];
+        const pct      = (scores[i] * 100).toFixed(0);
         const thumbUrl = _getThumbUrl(i);
-        const imgTag = thumbUrl
+        const imgTag   = thumbUrl
           ? `<img src="${thumbUrl}">`
           : `<div style="width:80px;height:80px;background:#1a2030;border-radius:2px;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:18px">👾</div>`;
+        const poi  = allPOI.find(p => p.id === pid);
+        const dist = (userPos && poi && poi.lat && poi.lng)
+          ? `<br>${_fmtDist(_haversineKm(userPos.lat, userPos.lng, poi.lat, poi.lng))}`
+          : '';
         return `<div class="ml-thumb" onclick="mlFlashFromResult('${escId(pid)}')">` +
           imgTag +
-          `<div class="ml-thumb-label">${pid}<br>${pct}%</div>` +
+          `<div class="ml-thumb-label">${pid}<br>${pct}%${dist}</div>` +
           `</div>`;
       }).join('') +
       `</div>`;
@@ -1667,6 +1673,17 @@ async function runMLSearch(canvas, top = 5) {
     el.textContent = '';
     console.warn('ML search failed:', e);
   }
+}
+
+function _haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371, toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function _fmtDist(km) {
+  return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
 }
 
 function mlFlashFromResult(id) {
