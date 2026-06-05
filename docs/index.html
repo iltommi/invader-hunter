@@ -531,7 +531,7 @@
     <button id="toolbar-photo-btn" onclick="takePhoto()" title="Take photo">📷</button>
     <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
     <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
-    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
+    <input type="file" id="import-input" accept=".txt" style="display:none" onchange="importTXT(event)">
     <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
   </div>
 </div>
@@ -548,7 +548,7 @@
   <div style="height:1px;background:var(--border)"></div>
   <a class="data-menu-item" href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener" style="text-decoration:none;display:block">⌂ GitHub</a>
   <div style="height:1px;background:var(--border)"></div>
-  <div class="data-menu-item" onclick="exportJSON();closeDataMenu()">⬇ Export</div>
+  <div class="data-menu-item" onclick="exportTXT();closeDataMenu()">⬇ Export</div>
   <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
   <div class="data-menu-item data-menu-danger" onclick="if(confirm('Reset all flashed mosaics?')){clearVisited();closeDataMenu()}">⟳ Reset</div>
 </div>
@@ -604,34 +604,28 @@ function toggleVisited(id) {
 
 function clearVisited() { localStorage.removeItem(STORAGE_KEY); refreshAll(); }
 
-function exportJSON() {
+function exportTXT() {
   const v = getVisited();
   if (!Object.keys(v).length) { alert('Nothing flashed yet!'); return; }
-  const payload = {
-    version: 1,
-    exported_at: new Date().toISOString(),
-    flashed: v,
-  };
+  const text = JSON.stringify(Object.keys(v));
   const a = document.createElement('a');
-  a.href = 'data:application/json,' + encodeURIComponent(JSON.stringify(payload, null, 2));
-  a.download = 'invaders_flashed.json';
+  a.href = 'data:text/plain,' + encodeURIComponent(text);
+  a.download = 'invaders_flashed.txt';
   a.click();
 }
 
-function importJSON(event) {
+function importTXT(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const payload = JSON.parse(e.target.result);
-      const incoming = payload.flashed || payload;
-      if (typeof incoming !== 'object' || Array.isArray(incoming))
-        throw new Error('Unexpected format');
+      const ids = JSON.parse(e.target.result);
+      if (!Array.isArray(ids)) throw new Error('Expected an array');
+      const incoming = Object.fromEntries(ids.map(id => [id, 1]));
       saveVisited({ ...getVisited(), ...incoming });
       refreshAll();
-      const n = Object.keys(incoming).length;
-      showToast(`✓ Imported ${n} flashed invader${n !== 1 ? 's' : ''}`);
+      showToast(`✓ Imported ${ids.length} flashed invader${ids.length !== 1 ? 's' : ''}`);
     } catch(err) {
       alert('Could not read file: ' + err.message);
     }
