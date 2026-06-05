@@ -1657,7 +1657,7 @@ async function runMLSearch(canvas, top = 5) {
         const imgTag = thumbUrl
           ? `<img src="${thumbUrl}">`
           : `<div style="width:80px;height:80px;background:#1a2030;border-radius:2px;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:18px">👾</div>`;
-        return `<div class="ml-thumb" onclick="selectPOI('${escId(pid)}')">` +
+        return `<div class="ml-thumb" onclick="mlFlashFromResult('${escId(pid)}')">` +
           imgTag +
           `<div class="ml-thumb-label">${pid}<br>${pct}%</div>` +
           `</div>`;
@@ -1666,6 +1666,14 @@ async function runMLSearch(canvas, top = 5) {
   } catch(e) {
     el.textContent = '';
     console.warn('ML search failed:', e);
+  }
+}
+
+function mlFlashFromResult(id) {
+  selectPOI(id);
+  if (confirm(`Flash ${id}?`)) {
+    const v = getVisited();
+    if (!v[id]) { v[id] = Date.now(); saveVisited(v); refreshAll(); }
   }
 }
 
