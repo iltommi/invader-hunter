@@ -1780,6 +1780,28 @@ function _gsKmeans(colors, k, iters = 25) {
   return { centroids, assign };
 }
 
+function _gsKmeansAdaptive(colors, kMin=2, kMax=8, threshold=0.10, iters=25) {
+  let bestCentroids = null, bestAssign = null;
+  let prevWcss = null, firstImprovement = null;
+  const kTop = Math.min(kMax, colors.length);
+  for (let k = kMin; k <= kTop; k++) {
+    const { centroids, assign } = _gsKmeans(colors, k, iters);
+    let wcss = 0;
+    for (let i = 0; i < colors.length; i++) {
+      const c = centroids[assign[i]];
+      const dr = colors[i][0]-c[0], dg = colors[i][1]-c[1], db = colors[i][2]-c[2];
+      wcss += dr*dr + dg*dg + db*db;
+    }
+    if (prevWcss !== null) {
+      const imp = prevWcss - wcss;
+      if (firstImprovement === null) firstImprovement = imp;
+      else if (firstImprovement > 0 && imp < threshold * firstImprovement) break;
+    }
+    bestCentroids = centroids; bestAssign = assign; prevWcss = wcss;
+  }
+  return { centroids: bestCentroids, assign: bestAssign };
+}
+
 function gridSnapCanvas(src) {
   const w = src.width, h = src.height;
   const pixels = src.getContext('2d').getImageData(0, 0, w, h).data;
@@ -1814,7 +1836,7 @@ function gridSnapCanvas(src) {
 
   if (cells.length < 9) return { canvas: src, confidence: 0 };
 
-  const { centroids, assign } = _gsKmeans(cells.map(c => c.rgb), 4);
+  const { centroids, assign } = _gsKmeansAdaptive(cells.map(c => c.rgb));
 
   const out = document.createElement('canvas');
   out.width = w; out.height = h;
