@@ -8,7 +8,8 @@ A PWA for tracking [Space Invader](https://space-invaders.com) street art mosaic
 - Filter by status: Unflashed / Flashed / Destroyed / All
 - Tap a marker to flash it (mark as found), take an annotated photo, or search Google Images
 - Stats popup: remaining, total, points, completion %
-- Export / import your flashed list as JSON
+- Export / import your flashed list as a plain text array
+- Photo identification: take or upload a photo and the app identifies the mosaic using an on-device CLIP model (no server needed)
 - Works offline (service worker caches the app shell and POI data)
 - Installable as a PWA on Android and iOS
 

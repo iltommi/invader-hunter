@@ -334,6 +334,42 @@
     background:transparent; color:#888; border:1px solid #444;
   }
 
+  /* ── COORDS MODAL ── */
+  #coords-modal {
+    display:none; position:fixed; inset:0; z-index:9200;
+    background:rgba(0,0,0,.85);
+    flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:24px;
+  }
+  #coords-modal.open { display:flex; }
+  #coords-modal-title {
+    font-family:'Press Start 2P',monospace; font-size:9px; color:var(--green);
+    text-align:center; line-height:1.8;
+  }
+  #coords-modal .coords-inputs { display:flex; gap:10px; }
+  #coords-modal input[type=text] {
+    font-family:'Share Tech Mono',monospace; font-size:13px;
+    background:var(--surface); color:var(--text); border:1px solid var(--border);
+    border-radius:2px; padding:8px 10px; width:120px; text-align:center;
+  }
+  #coords-modal input[type=text]:focus { outline:none; border-color:var(--cyan); }
+  #coords-modal-use-pos {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:8px 14px; border:none; border-radius:2px; cursor:pointer;
+    background:var(--green); color:#000;
+  }
+  .coords-modal-actions { display:flex; gap:12px; }
+  #coords-modal-save {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 18px; border:none; border-radius:2px; cursor:pointer;
+    background:var(--cyan); color:#000;
+  }
+  #coords-modal-skip {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 18px; border-radius:2px; cursor:pointer;
+    background:transparent; color:#888; border:1px solid #444;
+  }
+
   /* ── LOADER ── */
   #loader {
     position:fixed; inset:0; background:var(--bg); z-index:9999;
@@ -487,6 +523,19 @@
 </head>
 <body>
 
+<div id="coords-modal">
+  <div id="coords-modal-title"></div>
+  <button id="coords-modal-use-pos" onclick="coordsModalUsePos()">📡 Use my location</button>
+  <div class="coords-inputs">
+    <input type="text" id="coords-modal-lat" placeholder="lat" inputmode="decimal">
+    <input type="text" id="coords-modal-lng" placeholder="lng" inputmode="decimal">
+  </div>
+  <div class="coords-modal-actions">
+    <button id="coords-modal-save" onclick="saveCoordsFromModal()">✓ Save</button>
+    <button id="coords-modal-skip" onclick="closeCoordsModal()">Skip</button>
+  </div>
+</div>
+
 <div id="correct-modal">
   <div id="correct-hint">Drag corners to align with the invader</div>
   <canvas id="correct-canvas"></canvas>
@@ -550,6 +599,7 @@
   <div style="height:1px;background:var(--border)"></div>
   <div class="data-menu-item" onclick="exportTXT();closeDataMenu()">⬇ Export</div>
   <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
+  <div class="data-menu-item" onclick="exportDB();closeDataMenu()">⬇ Export DB</div>
   <div class="data-menu-item data-menu-danger" onclick="if(confirm('Reset all flashed mosaics?')){clearVisited();closeDataMenu()}">⟳ Reset</div>
 </div>
 
@@ -575,11 +625,13 @@
 // ─────────────────────────────────────────────────────────────
 const JSON_URL = './world_invaders.json';
 const STORAGE_KEY = 'invader_visited_v1';
+const COORDS_KEY  = 'invader_coords_v1';
 
 // ─────────────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────────────
-let allPOI = [];
+let allPOI    = [];
+let _rawItems = [];
 let filteredPOI = [];
 let cityPadding = {};  // city code → zero-pad width derived from max ID number
 let selectedId = null;
@@ -595,11 +647,32 @@ function getVisited() {
 }
 function saveVisited(v) { localStorage.setItem(STORAGE_KEY, JSON.stringify(v)); }
 
-function toggleVisited(id) {
+function getLocalCoords() {
+  try { return JSON.parse(localStorage.getItem(COORDS_KEY) || '{}'); } catch { return {}; }
+}
+function saveLocalCoords(c) { localStorage.setItem(COORDS_KEY, JSON.stringify(c)); }
+
+function applyLocalCoords() {
+  const coords = getLocalCoords();
+  for (const p of allPOI) {
+    if (!p.lat && coords[p.id]) { p.lat = coords[p.id].lat; p.lng = coords[p.id].lng; }
+  }
+}
+
+function markVisited(id) {
   const v = getVisited();
-  if (v[id]) delete v[id]; else v[id] = Date.now();
+  if (v[id]) return;
+  v[id] = Date.now();
   saveVisited(v);
   refreshAll();
+  const p = allPOI.find(x => x.id === id);
+  if (p && !p.lat) showCoordsModal(id);
+}
+
+function toggleVisited(id) {
+  const v = getVisited();
+  if (v[id]) { delete v[id]; saveVisited(v); refreshAll(); }
+  else markVisited(id);
 }
 
 function clearVisited() { localStorage.removeItem(STORAGE_KEY); refreshAll(); }
@@ -685,6 +758,7 @@ function normaliseStatus(s) {
 }
 
 function processItems(items) {
+  _rawItems = items;
   allPOI = items
     .filter(p => p && (p.id || p.name))
     .map(p => ({
@@ -708,6 +782,7 @@ function processItems(items) {
   for (const [code, n] of Object.entries(maxNum)) {
     cityPadding[code] = String(n).length;
   }
+  applyLocalCoords();
 }
 
 async function fetchFromNetwork() {
@@ -1827,12 +1902,69 @@ function _fmtDist(km) {
   return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
 }
 
+// ─────────────────────────────────────────────────────────────
+// COORDS MODAL
+// ─────────────────────────────────────────────────────────────
+
+let _coordsModalId = null;
+
+function showCoordsModal(id) {
+  _coordsModalId = id;
+  document.getElementById('coords-modal-title').textContent = `📍 ${id} — no location\nadd coordinates?`;
+  document.getElementById('coords-modal-lat').value = '';
+  document.getElementById('coords-modal-lng').value = '';
+  document.getElementById('coords-modal-use-pos').style.display = userPos ? '' : 'none';
+  document.getElementById('coords-modal').classList.add('open');
+}
+
+function closeCoordsModal() {
+  _coordsModalId = null;
+  document.getElementById('coords-modal').classList.remove('open');
+}
+
+function coordsModalUsePos() {
+  if (!userPos) return;
+  document.getElementById('coords-modal-lat').value = userPos.lat.toFixed(6);
+  document.getElementById('coords-modal-lng').value = userPos.lng.toFixed(6);
+}
+
+function saveCoordsFromModal() {
+  const id = _coordsModalId;
+  if (!id) return;
+  const lat = parseFloat(document.getElementById('coords-modal-lat').value);
+  const lng = parseFloat(document.getElementById('coords-modal-lng').value);
+  if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    alert('Invalid coordinates');
+    return;
+  }
+  const coords = getLocalCoords();
+  coords[id] = { lat, lng };
+  saveLocalCoords(coords);
+  const p = allPOI.find(x => x.id === id);
+  if (p) { p.lat = lat; p.lng = lng; }
+  closeCoordsModal();
+  refreshAll();
+  showToast(`✓ Location saved for ${id}`);
+}
+
+// ─────────────────────────────────────────────────────────────
+// EXPORT DB
+// ─────────────────────────────────────────────────────────────
+
+function exportDB() {
+  const coords = getLocalCoords();
+  const patched = _rawItems.map(item =>
+    (!item.lat && coords[item.id]) ? { ...item, ...coords[item.id] } : item
+  );
+  const a = document.createElement('a');
+  a.href = 'data:application/json,' + encodeURIComponent(JSON.stringify(patched));
+  a.download = 'world_invaders.json';
+  a.click();
+}
+
 function mlFlashFromResult(id) {
   selectPOI(id);
-  if (confirm(`Flash ${id}?`)) {
-    const v = getVisited();
-    if (!v[id]) { v[id] = Date.now(); saveVisited(v); refreshAll(); }
-  }
+  if (confirm(`Flash ${id}?`)) markVisited(id);
 }
 
 // Kick off asset loading as soon as the page loads (background, non-blocking)
