@@ -600,6 +600,8 @@
   <div class="data-menu-item" onclick="exportTXT();closeDataMenu()">⬇ Export</div>
   <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
   <div class="data-menu-item" onclick="exportDB();closeDataMenu()">⬇ Export DB</div>
+  <div class="data-menu-item" onclick="document.getElementById('import-db-input').click();closeDataMenu()">⬆ Import DB</div>
+  <input type="file" id="import-db-input" accept=".json" style="display:none" onchange="importDB(event)">
   <div class="data-menu-item data-menu-danger" onclick="if(confirm('Reset all flashed mosaics?')){clearVisited();closeDataMenu()}">⟳ Reset</div>
 </div>
 
@@ -1950,6 +1952,28 @@ function saveCoordsFromModal() {
 // ─────────────────────────────────────────────────────────────
 // EXPORT DB
 // ─────────────────────────────────────────────────────────────
+
+async function importDB(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const raw = JSON.parse(e.target.result);
+      const items = Array.isArray(raw) ? raw : raw.invaders ? raw.invaders : Object.values(raw).flat();
+      if (!items.length) throw new Error('No POIs found');
+      const db = await idbOpen();
+      await idbSet(db, 'pois', { items, etag: '' });
+      processItems(items);
+      refreshAll();
+      showToast(`✓ Loaded ${items.length} POIs`);
+    } catch(err) {
+      alert('Could not read file: ' + err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
 
 function exportDB() {
   const coords = getLocalCoords();
