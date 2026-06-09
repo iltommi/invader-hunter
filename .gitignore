@@ -1,5 +1,19 @@
-ml/
 clip_visual.onnx
 clip_visual.onnx.data
 clip_visual_q.onnx
+clip_visual_int8.onnx
 invaders_flashed.*
+
+__pycache__/
+*.pyc
+
+# ML large blobs — regenerate with download_images.py + train_clip.py
+ml/images/
+ml/clip_finetuned.pt
+ml/download.log
+ml/test.jpg
+ml/.DS_Store
+
+# ML derived outputs — regenerate with extract_features_clip.py
+ml/embeddings.npz
+ml/embeddings_clip.npz
