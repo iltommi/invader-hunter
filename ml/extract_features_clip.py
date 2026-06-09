@@ -12,6 +12,7 @@ All views are averaged to produce the final embedding.
 Output: embeddings_clip.npz  — {ids, embeddings}
 """
 
+import json
 import time
 import numpy as np
 from pathlib import Path
@@ -21,12 +22,19 @@ import random
 import torch
 from transformers import CLIPProcessor, CLIPModel
 
-IMAGES_DIR = Path('images')
-OUT_FILE   = Path('embeddings_clip.npz')
-BATCH_SIZE = 32
-TTA_N      = 8     # raw augmented views per image
-SNAP_N     = 4     # grid-snapped views per image (when snap succeeds)
-SNAP_CONF  = 0.4   # peak-spacing consistency threshold (0=chaotic, 1=perfect)
+IMAGES_DIR       = Path('images')
+OUT_FILE         = Path('embeddings_clip.npz')
+SNAP_LABELS_FILE = Path('snap_labels.json')
+BATCH_SIZE       = 32
+TTA_N            = 8     # raw augmented views per image
+SNAP_N           = 4     # grid-snapped views per image (when snap succeeds)
+SNAP_CONF        = 0.12
+
+def load_snap_labels():
+    try:
+        return json.loads(SNAP_LABELS_FILE.read_text())
+    except Exception:
+        return {}
 
 device = (
     torch.device('mps')  if torch.backends.mps.is_available() else
@@ -51,182 +59,100 @@ if FINETUNED_FILE.exists():
 
 # ── Grid snap (mirrors train_clip.py) ────────────────────────────────────────
 
-def _gs_peak_period(profile, min_tiles=8, min_spacing=4):
+def _gs_wavelet_period(profile, min_p=2.0, max_p=None):
     n = len(profile)
-    if n < min_tiles * min_spacing:
+    if max_p is None:
+        max_p = n / 3.0
+    if max_p < min_p or n < min_p * 3:
         return 0, 0.0
-    w = max(3, n // (min_tiles * 3))
-    smooth = np.convolve(profile, np.ones(w) / w, mode='same')
-    threshold = smooth.mean()
-    peaks = [i for i in range(1, n - 1)
-             if smooth[i] > smooth[i-1] and smooth[i] > smooth[i+1] and smooth[i] > threshold]
-    if len(peaks) < min_tiles:
+    w0   = 6.0
+    step = 0.1
+    periods = np.arange(min_p, max_p + step, step)
+    if len(periods) < 3:
         return 0, 0.0
-    spacings = np.diff(peaks).astype(float)
-    spacings = spacings[spacings >= min_spacing]
-    if len(spacings) < min_tiles - 1:
-        return 0, 0.0
-    period = max(min_spacing, int(round(float(np.median(spacings)))))
-    cv = float(spacings.std() / (spacings.mean() + 1e-9))
-    return period, max(0.0, 1.0 - cv)
-
-def _gs_sobel_profiles(arr):
-    gray = 0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]
-    sx = (-gray[:-2, :-2] + gray[:-2, 2:]
-          - 2*gray[1:-1, :-2] + 2*gray[1:-1, 2:]
-          - gray[2:, :-2] + gray[2:, 2:])
-    sy = (-gray[:-2, :-2] - 2*gray[:-2, 1:-1] - gray[:-2, 2:]
-          + gray[2:, :-2] + 2*gray[2:, 1:-1] + gray[2:, 2:])
-    return np.abs(sx).mean(axis=0), np.abs(sy).mean(axis=1)
+    p     = profile - profile.mean()
+    X     = np.fft.rfft(p)
+    Xpow  = np.abs(X) ** 2
+    freqs = np.fft.rfftfreq(n)
+    power = np.array([
+        float((Xpow * np.exp(-(w0 * (freqs * T - 1.0)) ** 2)).sum())
+        for T in periods
+    ])
+    best_idx = int(power.argmax())
+    if 0 < best_idx < len(periods) - 1:
+        p0, p1, p2 = power[best_idx - 1], power[best_idx], power[best_idx + 1]
+        denom = 2 * p1 - p2 - p0
+        delta = (0.5 * (p2 - p0) / denom) if abs(denom) > 1e-12 else 0.0
+        best_period = float(periods[best_idx] + delta * step)
+    else:
+        best_period = float(periods[best_idx])
+    bg   = float(np.median(power))
+    conf = max(0.0, min(1.0, (float(power[best_idx]) / (bg + 1e-9) - 1.0) / 2.0))
+    return best_period, conf
 
 def _gs_phase(profile, period):
-    T = max(1, round(period))
+    T = max(1.0, float(period))
+    T_int = max(1, round(T))
     n = len(profile)
     best_phase, best_score = 0, np.inf
-    for p in range(T):
-        score = 0.0
-        s = p
-        while s < n:
-            block = profile[s:min(s + T, n)]
+    for p in range(T_int):
+        score, i = 0.0, 0
+        while True:
+            s = p + round(i * T)
+            if s >= n:
+                break
+            e = p + round((i + 1) * T)
+            block = profile[s:min(e, n)]
             if len(block) > 1:
                 score += float(block.var()) * len(block)
-            s += T
+            i += 1
         if score < best_score:
             best_score = score
             best_phase = p
     return best_phase
 
-def _gs_kmeans_once(colors, k, iters, seed):
-    n = len(colors)
-    rng = np.random.default_rng(seed)
-    centroids = [colors[int(rng.integers(0, n))].astype(np.float64)]
-    for _ in range(k - 1):
-        d2 = np.array([min(float(((c - ctr)**2).sum()) for ctr in centroids) for c in colors])
-        probs = d2 / (d2.sum() + 1e-9)
-        centroids.append(colors[rng.choice(n, p=probs)].astype(np.float64))
-    centroids = np.array(centroids)
-    assign = np.zeros(n, dtype=np.int32)
-    for _ in range(iters):
-        dists = np.stack([((colors - c) ** 2).sum(axis=1) for c in centroids], axis=1)
-        new_assign = dists.argmin(axis=1).astype(np.int32)
-        if np.array_equal(new_assign, assign):
-            break
-        assign = new_assign
-        for c in range(k):
-            mask = assign == c
-            if mask.any():
-                centroids[c] = colors[mask].mean(axis=0)
-    wcss = sum(float(((colors[assign == c] - centroids[c])**2).sum()) for c in range(k) if (assign == c).any())
-    return centroids, assign, wcss
-
-def _gs_kmeans(colors, k=4, iters=25, restarts=3):
-    best = min((_gs_kmeans_once(colors, k, iters, s) for s in range(restarts)), key=lambda x: x[2])
-    return best[0], best[1]
-
-def _gs_kmeans_adaptive(colors, k_min=2, k_max=16, target_var=300, iters=25):
-    k_max = min(k_max, len(colors))
-    best_centroids, best_assign = None, None
-    for k in range(k_min, k_max + 1):
-        centroids, assign = _gs_kmeans(colors, k=k, iters=iters)
-        wcss = sum(float(((colors[assign == c] - centroids[c]) ** 2).sum())
-                   for c in range(k) if (assign == c).any())
-        best_centroids, best_assign = centroids, assign
-        if wcss / len(colors) < target_var:
-            break
-    return best_centroids, best_assign
-
-def _gs_merge_close(centroids, assign, min_dist=50):
-    centroids = centroids.copy().tolist()
-    assign = assign.copy()
-    changed = True
-    while changed:
-        changed = False
-        k = len(centroids)
-        for i in range(k):
-            for j in range(i + 1, k):
-                d = float(sum((centroids[i][c] - centroids[j][c])**2 for c in range(3))**0.5)
-                if d < min_dist:
-                    ci_n = int((assign == i).sum())
-                    cj_n = int((assign == j).sum())
-                    tot = ci_n + cj_n or 1
-                    centroids[i] = [(centroids[i][c]*ci_n + centroids[j][c]*cj_n)/tot for c in range(3)]
-                    centroids.pop(j)
-                    assign[assign == j] = i
-                    assign[assign > j] -= 1
-                    changed = True
-                    break
-            if changed:
-                break
-    return np.array(centroids, dtype=np.float64), assign
-
-def _gs_morph_clean(cells, assign):
-    gx_vals = sorted(set(c[0] for c in cells))
-    gy_vals = sorted(set(c[1] for c in cells))
-    to_col  = {gx: i for i, gx in enumerate(gx_vals)}
-    to_row  = {gy: i for i, gy in enumerate(gy_vals)}
-    grid    = {(to_col[c[0]], to_row[c[1]]): i for i, c in enumerate(cells)}
-    out     = assign.copy()
-    for i, c in enumerate(cells):
-        ci, ri = to_col[c[0]], to_row[c[1]]
-        nbrs = [grid.get((ci-1, ri)), grid.get((ci+1, ri)),
-                grid.get((ci, ri-1)), grid.get((ci, ri+1))]
-        nbrs = [j for j in nbrs if j is not None]
-        if len(nbrs) < 3:
-            continue
-        votes = {}
-        for j in nbrs:
-            v = assign[j]; votes[v] = votes.get(v, 0) + 1
-        top, cnt = max(votes.items(), key=lambda x: x[1])
-        if cnt >= 3 and top != assign[i]:
-            out[i] = top
-    return out
-
-def grid_snap_pil(img):
+def grid_snap_pil(img, force_T=None):
     arr = np.array(img.convert('RGB'), dtype=np.float32)
     h, w = arr.shape[:2]
-    col_profile, row_profile = _gs_sobel_profiles(arr)
-    Tx, cx = _gs_peak_period(col_profile, min_tiles=8)
-    Ty, cy = _gs_peak_period(row_profile, min_tiles=6)
-    x_ok = cx >= SNAP_CONF and Tx >= 4
-    y_ok = cy >= SNAP_CONF and Ty >= 4
-    if x_ok and y_ok:
-        T = max(4, round((Tx * cx + Ty * cy) / (cx + cy)))
-        confidence = min(cx, cy)
-    elif x_ok:
-        T = Tx; confidence = cx
-    elif y_ok:
-        T = Ty; confidence = cy
+    gray = 0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]
+    col_profile = np.abs(np.diff(gray.mean(axis=0)))
+    row_profile = np.abs(np.diff(gray.mean(axis=1)))
+    if force_T is not None:
+        T, confidence = float(force_T), 1.0
     else:
-        return None, 0.0
+        Tx, cx = _gs_wavelet_period(col_profile)
+        Ty, cy = _gs_wavelet_period(row_profile)
+        if cx < SNAP_CONF and cy < SNAP_CONF:
+            return None, 0.0
+        T = Tx if cx >= cy else Ty
+        confidence = max(cx, cy)
     px = _gs_phase(col_profile, T)
     py = _gs_phase(row_profile, T)
-    margin = max(1, round(T * 0.15))
-
-    cells = []
-    gy = py
-    while gy < h:
-        y1 = min(gy + T, h)
-        gx = px
-        while gx < w:
-            x1 = min(gx + T, w)
-            patch = arr[gy + margin:y1 - margin, gx + margin:x1 - margin]
-            if patch.size > 0:
-                cells.append((gx, gy, x1, y1, patch.reshape(-1, 3).mean(axis=0)))
-            gx += T
-        gy += T
-
-    if len(cells) < 9:
-        return None, 0.0
-
-    colors = np.array([c[4] for c in cells], dtype=np.float32)
-    centroids, raw_assign = _gs_kmeans_adaptive(colors)
-    centroids, raw_assign = _gs_merge_close(centroids, raw_assign, min_dist=50)
-    assign = _gs_morph_clean(cells, raw_assign)
+    margin = min(max(0, round(T * 0.15)), max(0, int(T) // 2 - 1))
 
     out = np.zeros_like(arr)
-    for i, (gx, gy, x1, y1, _) in enumerate(cells):
-        out[gy:y1, gx:x1] = centroids[assign[i]]
+    n_cells = 0
+    yi = 0
+    while True:
+        gy = py + round(yi * T)
+        if gy >= h:
+            break
+        y1 = min(py + round((yi + 1) * T), h)
+        xi = 0
+        while True:
+            gx = px + round(xi * T)
+            if gx >= w:
+                break
+            x1 = min(px + round((xi + 1) * T), w)
+            patch = arr[gy + margin:y1 - margin, gx + margin:x1 - margin]
+            if patch.size > 0:
+                out[gy:y1, gx:x1] = patch.reshape(-1, 3).mean(axis=0)
+                n_cells += 1
+            xi += 1
+        yi += 1
 
+    if n_cells < 9:
+        return None, 0.0
     return Image.fromarray(out.clip(0, 255).astype(np.uint8)), confidence
 
 # ── Augmentation ──────────────────────────────────────────────────────────────
@@ -264,8 +190,12 @@ def embed_images(imgs):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-paths = sorted(IMAGES_DIR.rglob('*.png'))
+paths       = sorted(IMAGES_DIR.rglob('*.png'))
+snap_labels = load_snap_labels()
 print(f'{len(paths)} images  ×  ({TTA_N} raw + up to {SNAP_N} snapped) views')
+print(f'Snap labels: {len(snap_labels)} entries  '
+      f'({sum(1 for v in snap_labels.values() if v.get("verdict")=="good")} good, '
+      f'{sum(1 for v in snap_labels.values() if v.get("verdict")=="bad")} bad)')
 
 ids        = [p.stem for p in paths]
 embeddings = np.zeros((len(paths), 512), dtype=np.float32)
@@ -286,8 +216,14 @@ for batch_start in range(0, len(paths), BATCH_SIZE):
         except Exception:
             img = Image.new('RGB', (224, 224))
         raw_imgs.append(img)
-        snapped, _ = grid_snap_pil(img)
-        snapped_imgs.append(snapped)
+        label   = snap_labels.get(p.stem, {})
+        verdict = label.get('verdict', '')
+        force_T = label.get('T') if label.get('forced_T') else None
+        if verdict == 'bad':
+            snapped_imgs.append(None)
+        else:
+            snapped, _ = grid_snap_pil(img, force_T=force_T)
+            snapped_imgs.append(snapped)
 
     snap_total += n
     snap_hit   += sum(1 for s in snapped_imgs if s is not None)

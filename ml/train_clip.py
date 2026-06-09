@@ -18,6 +18,7 @@ Run:
   python3 extract_features_clip.py   # rebuild the index with fine-tuned weights
 """
 
+import json
 import random
 import time
 from pathlib import Path
@@ -29,8 +30,15 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from transformers import CLIPModel, CLIPProcessor
 
-IMAGES_DIR  = Path('images')
-OUT_FILE    = Path('clip_finetuned.pt')
+IMAGES_DIR       = Path('images')
+OUT_FILE         = Path('clip_finetuned.pt')
+SNAP_LABELS_FILE = Path('snap_labels.json')
+
+def load_snap_labels():
+    try:
+        return json.loads(SNAP_LABELS_FILE.read_text())
+    except Exception:
+        return {}
 BATCH_SIZE  = 48          # reduced from 64 — 3 forward passes need more memory
 EPOCHS      = 10
 LR          = 1e-5
@@ -46,137 +54,115 @@ print(f'Device: {device}')
 
 # ── Grid snap (Python/numpy mirror of the JS implementation) ──────────────────
 
-def _gs_fft_period(profile, min_p=5):
+def _gs_wavelet_period(profile, min_p=2.0, max_p=None):
+    """Period detection via Morlet CWT power spectrum (pure numpy).
+    Evaluates CWT power at a dense grid of periods using Parseval's theorem:
+    P(T) = Σ_f |X(f)|² · exp(−(ω₀·T·f − ω₀)²)
+    Continuous scale axis gives sub-pixel accuracy and handles small images
+    with few tiles better than FFT.
+    """
     n = len(profile)
-    k_min, k_max = 3, n // min_p
-    if k_max < k_min:
+    if max_p is None:
+        max_p = n / 3.0
+    if max_p < min_p or n < min_p * 3:
         return 0, 0.0
-    ps = np.abs(np.fft.rfft(profile - profile.mean())) ** 2
-    k_max = min(k_max, len(ps) - 1)
-    sub = ps[k_min:k_max + 1]
-    total = sub.sum()
-    if total == 0:
+
+    w0   = 6.0
+    step = 0.1
+    periods = np.arange(min_p, max_p + step, step)
+    if len(periods) < 3:
         return 0, 0.0
-    best_idx = int(sub.argmax())
-    best_k = k_min + best_idx
-    return round(n / best_k), float(sub[best_idx] / total)
+
+    p     = profile - profile.mean()
+    X     = np.fft.rfft(p)
+    Xpow  = np.abs(X) ** 2
+    freqs = np.fft.rfftfreq(n)
+
+    power = np.array([
+        float((Xpow * np.exp(-(w0 * (freqs * T - 1.0)) ** 2)).sum())
+        for T in periods
+    ])
+
+    best_idx = int(power.argmax())
+
+    if 0 < best_idx < len(periods) - 1:
+        p0, p1, p2 = power[best_idx - 1], power[best_idx], power[best_idx + 1]
+        denom = 2 * p1 - p2 - p0
+        delta = (0.5 * (p2 - p0) / denom) if abs(denom) > 1e-12 else 0.0
+        best_period = float(periods[best_idx] + delta * step)
+    else:
+        best_period = float(periods[best_idx])
+
+    bg   = float(np.median(power))
+    peak = float(power[best_idx])
+    conf = max(0.0, min(1.0, (peak / (bg + 1e-9) - 1.0) / 2.0))
+
+    return best_period, conf
 
 def _gs_phase(profile, period):
-    T = max(1, round(period))
+    T = max(1.0, float(period))
+    T_int = max(1, round(T))
     n = len(profile)
     best_phase, best_score = 0, np.inf
-    for p in range(T):
-        score = 0.0
-        s = p
-        while s < n:
-            block = profile[s:min(s + T, n)]
+    for p in range(T_int):
+        score, i = 0.0, 0
+        while True:
+            s = p + round(i * T)
+            if s >= n:
+                break
+            e = p + round((i + 1) * T)
+            block = profile[s:min(e, n)]
             if len(block) > 1:
                 score += float(block.var()) * len(block)
-            s += T
+            i += 1
         if score < best_score:
             best_score = score
             best_phase = p
     return best_phase
 
-def _gs_kmeans(colors, k=4, iters=25):
-    n = len(colors)
-    idx = np.linspace(0, n - 1, k, dtype=int)
-    centroids = colors[idx].astype(np.float64).copy()
-    assign = np.zeros(n, dtype=np.int32)
-    for _ in range(iters):
-        dists = np.stack([((colors - c) ** 2).sum(axis=1) for c in centroids], axis=1)
-        new_assign = dists.argmin(axis=1).astype(np.int32)
-        if np.array_equal(new_assign, assign):
-            break
-        assign = new_assign
-        for c in range(k):
-            mask = assign == c
-            if mask.any():
-                centroids[c] = colors[mask].mean(axis=0)
-    return centroids, assign
-
-def _gs_kmeans_adaptive(colors, k_min=2, k_max=8, threshold=0.10, iters=25):
-    k_max = min(k_max, len(colors))
-    best_centroids, best_assign = None, None
-    prev_wcss = None
-    first_improvement = None
-    for k in range(k_min, k_max + 1):
-        centroids, assign = _gs_kmeans(colors, k=k, iters=iters)
-        wcss = sum(float(((colors[assign == c] - centroids[c]) ** 2).sum())
-                   for c in range(k) if (assign == c).any())
-        if prev_wcss is not None:
-            imp = prev_wcss - wcss
-            if first_improvement is None:
-                first_improvement = imp
-            elif first_improvement > 0 and imp < threshold * first_improvement:
-                break
-        best_centroids, best_assign = centroids, assign
-        prev_wcss = wcss
-    return best_centroids, best_assign
-
-def _gs_morph_clean(cells, assign):
-    gx_vals = sorted(set(c[0] for c in cells))
-    gy_vals = sorted(set(c[1] for c in cells))
-    to_col  = {gx: i for i, gx in enumerate(gx_vals)}
-    to_row  = {gy: i for i, gy in enumerate(gy_vals)}
-    grid    = {(to_col[c[0]], to_row[c[1]]): i for i, c in enumerate(cells)}
-    out     = assign.copy()
-    for i, c in enumerate(cells):
-        ci, ri = to_col[c[0]], to_row[c[1]]
-        nbrs = [grid.get((ci-1, ri)), grid.get((ci+1, ri)),
-                grid.get((ci, ri-1)), grid.get((ci, ri+1))]
-        nbrs = [j for j in nbrs if j is not None]
-        if len(nbrs) < 3:
-            continue
-        votes = {}
-        for j in nbrs:
-            v = assign[j]; votes[v] = votes.get(v, 0) + 1
-        top, cnt = max(votes.items(), key=lambda x: x[1])
-        if cnt >= 3 and top != assign[i]:
-            out[i] = top
-    return out
-
-def grid_snap_pil(img):
+def grid_snap_pil(img, force_T=None):
     arr = np.array(img.convert('RGB'), dtype=np.float32)
     h, w = arr.shape[:2]
     gray = 0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]
     col_profile = np.abs(np.diff(gray.mean(axis=0)))
     row_profile = np.abs(np.diff(gray.mean(axis=1)))
-    Tx, cx = _gs_fft_period(col_profile)
-    Ty, cy = _gs_fft_period(row_profile)
-    if cx < SNAP_CONF and cy < SNAP_CONF:
-        return None, 0.0
-    T = Tx if cx >= cy else Ty
-    confidence = max(cx, cy)
+    if force_T is not None:
+        T, confidence = float(force_T), 1.0
+    else:
+        Tx, cx = _gs_wavelet_period(col_profile)
+        Ty, cy = _gs_wavelet_period(row_profile)
+        if cx < SNAP_CONF and cy < SNAP_CONF:
+            return None, 0.0, 0
+        T = Tx if cx >= cy else Ty
+        confidence = max(cx, cy)
     px = _gs_phase(col_profile, T)
     py = _gs_phase(row_profile, T)
-    margin = max(1, round(T * 0.15))
-
-    cells = []
-    gy = py
-    while gy < h:
-        y1 = min(gy + T, h)
-        gx = px
-        while gx < w:
-            x1 = min(gx + T, w)
-            patch = arr[gy + margin:y1 - margin, gx + margin:x1 - margin]
-            if patch.size > 0:
-                cells.append((gx, gy, x1, y1, patch.reshape(-1, 3).mean(axis=0)))
-            gx += T
-        gy += T
-
-    if len(cells) < 9:
-        return None, 0.0
-
-    colors = np.array([c[4] for c in cells], dtype=np.float32)
-    centroids, raw_assign = _gs_kmeans_adaptive(colors)
-    assign = _gs_morph_clean(cells, raw_assign)
+    margin = min(max(0, round(T * 0.15)), max(0, int(T) // 2 - 1))
 
     out = np.zeros_like(arr)
-    for i, (gx, gy, x1, y1, _) in enumerate(cells):
-        out[gy:y1, gx:x1] = centroids[assign[i]]
+    n_cells = 0
+    yi = 0
+    while True:
+        gy = py + round(yi * T)
+        if gy >= h:
+            break
+        y1 = min(py + round((yi + 1) * T), h)
+        xi = 0
+        while True:
+            gx = px + round(xi * T)
+            if gx >= w:
+                break
+            x1 = min(px + round((xi + 1) * T), w)
+            patch = arr[gy + margin:y1 - margin, gx + margin:x1 - margin]
+            if patch.size > 0:
+                out[gy:y1, gx:x1] = patch.reshape(-1, 3).mean(axis=0)
+                n_cells += 1
+            xi += 1
+        yi += 1
 
-    return Image.fromarray(out.clip(0, 255).astype(np.uint8)), confidence
+    if n_cells < 9:
+        return None, 0.0, 0
+    return Image.fromarray(out.clip(0, 255).astype(np.uint8)), confidence, T
 
 # ── Augmentation ──────────────────────────────────────────────────────────────
 
@@ -204,19 +190,49 @@ def augment_snap(img):
     img = ImageEnhance.Brightness(img).enhance(random.uniform(0.9, 1.1))
     return img
 
+def synth_subpixel(img, force_T=None):
+    snapped, _, T = grid_snap_pil(img, force_T=force_T)
+    if snapped is None or T < 2:
+        return None
+
+    w, h   = snapped.size
+    n_tx   = max(1, round(w / T))
+    n_ty   = max(1, round(h / T))
+
+    art    = snapped.resize((n_tx, n_ty), Image.NEAREST)
+    padded = Image.new('RGB', (n_tx + 2, n_ty + 2), (0, 0, 0))
+    padded.paste(art, (1, 1))
+
+    T_new  = T * random.uniform(0.75, 1.25)
+    ox     = random.random()   # sub-tile phase offset [0, 1)
+    oy     = random.random()
+
+    big_w  = max(4, round((n_tx + 2) * T_new))
+    big_h  = max(4, round((n_ty + 2) * T_new))
+    big    = padded.resize((big_w, big_h), Image.BILINEAR)
+
+    # Crop: skip the 1-tile border plus the random phase offset
+    x0     = round(T_new * (1 + ox))
+    y0     = round(T_new * (1 + oy))
+    result = big.crop((x0, y0, x0 + round(n_tx * T_new), y0 + round(n_ty * T_new)))
+
+    return result if result.width >= 4 and result.height >= 4 else None
+
 # ── Dataset ───────────────────────────────────────────────────────────────────
 
 class InvaderDataset(Dataset):
-    def __init__(self, paths, processor):
-        self.paths     = paths
-        self.processor = processor
+    def __init__(self, paths, processor, snap_labels):
+        self.paths       = paths
+        self.processor   = processor
+        self.snap_labels = snap_labels
 
     def __len__(self):
         return len(self.paths)
 
     def __getitem__(self, idx):
+        path = self.paths[idx]
         try:
-            img = Image.open(self.paths[idx]).convert('RGB')
+            img = Image.open(path).convert('RGB')
         except Exception:
             img = Image.new('RGB', (224, 224))
 
@@ -225,8 +241,19 @@ class InvaderDataset(Dataset):
         view_a = pv(augment(img))
         view_b = pv(augment(img))
 
-        snapped, _ = grid_snap_pil(img)
-        view_s = pv(augment_snap(snapped) if snapped is not None else augment(img))
+        label   = self.snap_labels.get(path.stem, {})
+        verdict = label.get('verdict', '')
+        force_T = label.get('T') if label.get('forced_T') else None
+
+        if verdict == 'bad':
+            view_s = pv(augment(img))
+        else:
+            synth = synth_subpixel(img, force_T=force_T)
+            if synth is not None:
+                view_s = pv(augment_snap(synth))
+            else:
+                snapped, _, _ = grid_snap_pil(img, force_T=force_T)
+                view_s = pv(augment_snap(snapped) if snapped is not None else augment(img))
 
         return view_a, view_b, view_s
 
@@ -261,9 +288,13 @@ for layer in list(model.vision_model.encoder.layers)[:-4]:
 trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print(f'Trainable: {trainable:,} params')
 
-paths  = sorted(IMAGES_DIR.rglob('*.png'))
+paths       = sorted(IMAGES_DIR.rglob('*.png'))
+snap_labels = load_snap_labels()
+print(f'Snap labels: {len(snap_labels)} entries  '
+      f'({sum(1 for v in snap_labels.values() if v.get("verdict")=="good")} good, '
+      f'{sum(1 for v in snap_labels.values() if v.get("verdict")=="bad")} bad)')
 loader = DataLoader(
-    InvaderDataset(paths, processor),
+    InvaderDataset(paths, processor, snap_labels),
     batch_size=BATCH_SIZE, shuffle=True, num_workers=0,
 )
 
