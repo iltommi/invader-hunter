@@ -581,7 +581,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-10 23:10</div>
+    <div class="about-build" id="about-build-date">build 2026-06-10 23:15</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -1733,8 +1733,15 @@ function showToast(msg, duration=2500) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('SW registered'))
+      .then(reg => {
+        reg.update(); // force check for new SW on every load
+      })
       .catch(e => console.warn('SW failed:', e));
+
+    // When a new SW takes over, reload to get fresh files
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
   });
 }
 
