@@ -2,7 +2,6 @@ const CACHE       = 'invader-hunter-v7';
 const SHARE_CACHE = 'invader-share-v1';
 
 const PRECACHE = [
-  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -14,7 +13,7 @@ const PRECACHE = [
   'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css',
 ];
 
-// Install: pre-cache app shell
+// Install: pre-cache app shell (not index.html — it's network-first)
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
@@ -32,7 +31,7 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Fetch: cache-first for app shell, network-first for tiles and POI data
+// Fetch
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
@@ -53,18 +52,31 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Map tiles: always network, no caching (too many, too large)
+  // Map tiles: always network, no caching
   if (url.hostname.includes('cartocdn.com')) {
     e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
     return;
   }
 
-  // Cache-first for everything else (app shell, Leaflet, fonts, POI data)
+  // index.html: network-first, fall back to cache when offline
+  if (url.pathname.endsWith('/') || url.pathname.endsWith('index.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(response => {
+          const clone = response.clone();
+          caches.open(CACHE).then(cache => cache.put(e.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Everything else: cache-first (icons, fonts, Leaflet, model, embeddings…)
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(response => {
-        // Cache successful GET responses
         if (e.request.method === 'GET' && response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE).then(cache => cache.put(e.request, clone));
