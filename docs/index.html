@@ -269,8 +269,13 @@
   #photo-download-btn { background:var(--green);  color:#000; }
   #photo-ai-btn       { background:var(--purple); color:#fff; }
   #photo-ai-btn:disabled { opacity:.4; cursor:default; }
-  #photo-back-btn     { background:transparent; color:var(--yellow); border:1px solid var(--yellow) !important; }
   #photo-close-btn    { background:transparent; color:#888; border:1px solid #444 !important; }
+  #photo-back-btn {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 16px; border-radius:2px; cursor:pointer;
+    background:transparent; color:var(--yellow); border:1px solid var(--yellow);
+    width:100%; max-width:400px;
+  }
   #ml-status {
     position:fixed; bottom:calc(76px + env(safe-area-inset-bottom,0px)); left:16px;
     z-index:999;
@@ -552,9 +557,9 @@
     <button id="photo-share-btn">⬆ Share</button>
     <button id="photo-download-btn">⬇ Save</button>
     <button id="photo-ai-btn">👾 Identify</button>
-    <button id="photo-back-btn">↩ Redo</button>
     <button id="photo-close-btn">✕ Close</button>
   </div>
+  <button id="photo-back-btn">↩ Redo perspective</button>
   <div id="ml-results"></div>
 </div>
 
