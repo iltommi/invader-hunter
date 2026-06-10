@@ -346,6 +346,37 @@
   }
 
   /* ── COORDS MODAL ── */
+  #about-modal {
+    display:none; position:fixed; inset:0; z-index:9300;
+    background:rgba(0,0,0,.88);
+    flex-direction:column; align-items:center; justify-content:center;
+    gap:0; padding:32px 24px;
+  }
+  #about-modal.open { display:flex; }
+  #about-box {
+    background:var(--surface); border:1px solid var(--cyan); border-radius:2px;
+    padding:28px 28px 20px; max-width:360px; width:100%;
+    font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--text);
+    display:flex; flex-direction:column; gap:14px;
+  }
+  #about-box h2 {
+    font-family:'Press Start 2P',monospace; font-size:11px;
+    color:var(--green); margin:0; text-align:center;
+  }
+  #about-box .about-build {
+    font-size:10px; color:#506070; text-align:center;
+  }
+  #about-box .about-links { display:flex; flex-direction:column; gap:8px; }
+  #about-box a {
+    color:var(--cyan); text-decoration:none;
+  }
+  #about-box a:hover { text-decoration:underline; }
+  #about-close {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 20px; background:transparent; color:#888;
+    border:1px solid #444; border-radius:2px; cursor:pointer;
+    align-self:center; margin-top:4px;
+  }
   #coords-modal {
     display:none; position:fixed; inset:0; z-index:9200;
     background:rgba(0,0,0,.85);
@@ -547,6 +578,20 @@
   </div>
 </div>
 
+<div id="about-modal">
+  <div id="about-box">
+    <h2>👾 INVADER HUNTER</h2>
+    <div class="about-build" id="about-build-date">build 2026-06-10 23:10</div>
+    <div class="about-links">
+      <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
+      <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
+      <a href="https://www.invader-spotter.art" target="_blank" rel="noopener">🗺 invader-spotter.art — IDs &amp; status database</a>
+      <a href="https://iltommi.github.io/invader-hunter" target="_blank" rel="noopener">🌐 iltommi.github.io/invader-hunter — this app</a>
+    </div>
+    <button id="about-close" onclick="document.getElementById('about-modal').classList.remove('open')">✕ Close</button>
+  </div>
+</div>
+
 <div id="correct-modal">
   <div id="correct-hint">Drag corners to align with the invader</div>
   <canvas id="correct-canvas"></canvas>
@@ -571,7 +616,6 @@
 
 <div id="loader">
   <div class="loader-title">👾 INVADER HUNTER</div>
-  <div class="loader-sub" style="color:#2a3a4a;font-size:10px;margin-bottom:12px">2026-06-10 23:02</div>
   <div class="loader-sub" id="loader-msg">Connecting to database…</div>
   <div class="progress-bar"><div class="progress-fill" id="loader-bar"></div></div>
 </div>
@@ -609,14 +653,14 @@
   <div class="data-menu-item filter-menu-item" data-key="destroyed" onclick="setFilter('destroyed')">💀 Destroyed</div>
   <div class="data-menu-item filter-menu-item" data-key="all"       onclick="setFilter('all')">👾 All</div>
   <div style="height:1px;background:var(--border)"></div>
-  <a class="data-menu-item" href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener" style="text-decoration:none;display:block">⌂ GitHub</a>
-  <div style="height:1px;background:var(--border)"></div>
   <div class="data-menu-item" onclick="exportTXT();closeDataMenu()">⬇ Export</div>
   <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
   <div class="data-menu-item" onclick="exportDB();closeDataMenu()">⬇ Export DB</div>
   <div class="data-menu-item" onclick="document.getElementById('import-db-input').click();closeDataMenu()">⬆ Import DB</div>
   <input type="file" id="import-db-input" accept=".json" style="display:none" onchange="importDB(event)">
   <div class="data-menu-item data-menu-danger" onclick="if(confirm('Reset all flashed mosaics?')){clearVisited();closeDataMenu()}">⟳ Reset</div>
+  <div style="height:1px;background:var(--border)"></div>
+  <div class="data-menu-item" onclick="openAbout();closeDataMenu()">ℹ About</div>
 </div>
 
 <div class="main">
@@ -1021,6 +1065,10 @@ function toggleDataMenu(e) {
 
 function closeDataMenu() {
   document.getElementById('data-popup').classList.remove('open');
+}
+
+function openAbout() {
+  document.getElementById('about-modal').classList.add('open');
 }
 
 document.addEventListener('click', () => {
