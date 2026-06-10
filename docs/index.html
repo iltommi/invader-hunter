@@ -279,13 +279,13 @@
   }
   #ml-status {
     position:fixed; bottom:calc(76px + env(safe-area-inset-bottom,0px)); left:16px;
-    z-index:999;
+    z-index:9500;
     background:var(--surface); border:1px solid var(--cyan); border-radius:2px;
     padding:5px 9px;
     font-family:'Share Tech Mono',monospace; font-size:10px;
     color:var(--cyan); display:flex; align-items:center; gap:6px;
     opacity:1; transition:opacity 1.5s ease;
-    pointer-events:none; position:relative; overflow:hidden;
+    pointer-events:none; overflow:hidden;
   }
   #ml-status.hidden { opacity:0; }
   #ml-status .ml-dot {
@@ -571,7 +571,7 @@
 
 <div id="loader">
   <div class="loader-title">👾 INVADER HUNTER</div>
-  <div class="loader-sub" style="color:#2a3a4a;font-size:10px;margin-bottom:12px">2026-06-10 19:13</div>
+  <div class="loader-sub" style="color:#2a3a4a;font-size:10px;margin-bottom:12px">2026-06-10 19:36</div>
   <div class="loader-sub" id="loader-msg">Connecting to database…</div>
   <div class="progress-bar"><div class="progress-fill" id="loader-bar"></div></div>
 </div>
