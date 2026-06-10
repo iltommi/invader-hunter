@@ -1382,6 +1382,7 @@ document.getElementById('photo-download-btn').addEventListener('click', () => {
 document.getElementById('photo-ai-btn').addEventListener('click', async () => {
   const btn = document.getElementById('photo-ai-btn');
   btn.disabled = true;
+  await loadMLAssets();
   await runMLSearch(window._searchCanvas);
   btn.disabled = false;
 });
@@ -2028,9 +2029,6 @@ function mlFlashFromResult(id) {
   selectPOI(id);
   if (confirm(`Flash ${id}?`)) markVisited(id);
 }
-
-// Kick off asset loading as soon as the page loads (background, non-blocking)
-loadMLAssets();
 
 // ─────────────────────────────────────────────────────────────
 // BOOT
