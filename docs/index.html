@@ -628,7 +628,7 @@
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
 
-<div id="ml-status"><div class="ml-dot pulsing"></div><span>AI loading…</span></div>
+<div id="ml-status" class="hidden"><div class="ml-dot"></div><span></span></div>
 
 <div id="toast"></div>
 
@@ -1761,6 +1761,7 @@ async function loadMLAssets() {
     _mlSetStatus('AI ready', 'ready');
   } catch(e) {
     console.warn('ML assets not available:', e.message);
+    _mlLoadStart = false;  // allow retry
     _mlSetStatus('AI unavailable', 'error');
     setTimeout(() => document.getElementById('ml-status').classList.add('hidden'), 4000);
   }
