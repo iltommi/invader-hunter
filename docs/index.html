@@ -547,6 +547,7 @@
   <canvas id="correct-canvas"></canvas>
   <div id="correct-actions">
     <button id="correct-apply-btn">✓ Apply</button>
+    <button id="correct-reset-btn">↺ Reset</button>
     <button id="correct-skip-btn">Skip</button>
   </div>
 </div>
@@ -1162,8 +1163,14 @@ let _correctImg   = null;  // HTMLImageElement of the captured photo
 let _correctScale = 1;     // ratio: canvas-coords → original-image-coords
 let _corners      = [];    // 4 corners in canvas coords [[x,y],…]
 let _dragIdx      = -1;    // which corner is being dragged
+let _savedCorners = null;  // normalized [0..1] corners saved on apply/skip
 
-function showCorrectionModal(imgEl) {
+function _defaultCorners(w, h) {
+  const m = 0.1;
+  return [[w*m, h*m], [w*(1-m), h*m], [w*(1-m), h*(1-m)], [w*m, h*(1-m)]];
+}
+
+function showCorrectionModal(imgEl, restoreLast = false) {
   _correctImg = imgEl;
   const modal  = document.getElementById('correct-modal');
   const canvas = document.getElementById('correct-canvas');
@@ -1176,14 +1183,11 @@ function showCorrectionModal(imgEl) {
   canvas.height = Math.round(imgEl.naturalHeight * scale);
   _correctScale = imgEl.naturalWidth / canvas.width;
 
-  // Init corners at image edges (inset 10%)
-  const m = 0.1;
-  _corners = [
-    [canvas.width*m,          canvas.height*m],
-    [canvas.width*(1-m),      canvas.height*m],
-    [canvas.width*(1-m),      canvas.height*(1-m)],
-    [canvas.width*m,          canvas.height*(1-m)],
-  ];
+  if (restoreLast && _savedCorners) {
+    _corners = _savedCorners.map(([nx, ny]) => [nx * canvas.width, ny * canvas.height]);
+  } else {
+    _corners = _defaultCorners(canvas.width, canvas.height);
+  }
   drawCorrection();
   modal.classList.add('open');
 }
@@ -1249,7 +1253,15 @@ function correctPointerPos(e, canvas) {
   canvas.addEventListener('touchend',   onEnd);
 })();
 
+document.getElementById('correct-reset-btn').addEventListener('click', () => {
+  const canvas = document.getElementById('correct-canvas');
+  _corners = _defaultCorners(canvas.width, canvas.height);
+  drawCorrection();
+});
+
 document.getElementById('correct-apply-btn').addEventListener('click', () => {
+  const canvas = document.getElementById('correct-canvas');
+  _savedCorners = _corners.map(([x,y]) => [x / canvas.width, y / canvas.height]);
   document.getElementById('correct-modal').classList.remove('open');
   // Scale corners back to original image resolution
   const srcCorners = _corners.map(([x,y]) => [x*_correctScale, y*_correctScale]);
@@ -1273,6 +1285,8 @@ document.getElementById('correct-apply-btn').addEventListener('click', () => {
 });
 
 document.getElementById('correct-skip-btn').addEventListener('click', () => {
+  const canvas = document.getElementById('correct-canvas');
+  _savedCorners = _corners.map(([x,y]) => [x / canvas.width, y / canvas.height]);
   document.getElementById('correct-modal').classList.remove('open');
   window._warpedCanvas = null;
   // Use original image as search canvas
@@ -1401,7 +1415,7 @@ document.getElementById('photo-back-btn').addEventListener('click', () => {
   _revokeThumbUrls();
   window._searchCanvas = null;
   currentPhotoBlob = currentPhotoFname = null;
-  if (_capturedImg) showCorrectionModal(_capturedImg);
+  if (_capturedImg) showCorrectionModal(_capturedImg, true);
 });
 
 document.getElementById('photo-close-btn').addEventListener('click', () => {
