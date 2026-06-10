@@ -269,6 +269,8 @@
   #photo-download-btn { background:var(--green);  color:#000; }
   #photo-ai-btn       { background:var(--purple); color:#fff; }
   #photo-ai-btn:disabled { opacity:.4; cursor:default; }
+  #photo-tag-btn      { background:var(--green); color:#000; }
+  #photo-tag-btn:disabled { opacity:.4; cursor:default; }
   #photo-close-btn    { background:transparent; color:#888; border:1px solid #444 !important; }
   #photo-back-btn {
     font-family:'Press Start 2P',monospace; font-size:8px;
@@ -558,6 +560,7 @@
     <button id="photo-share-btn">⬆ Share</button>
     <button id="photo-download-btn">⬇ Save</button>
     <button id="photo-ai-btn">👾 Identify</button>
+    <button id="photo-tag-btn" class="hidden">⚡ Flash</button>
     <button id="photo-close-btn">✕ Close</button>
   </div>
   <button id="photo-back-btn">↩ Redo perspective</button>
@@ -1334,20 +1337,18 @@ document.getElementById('photo-input').addEventListener('change', async e => {
   showCorrectionModal(_capturedImg);
 });
 
-async function showPhotoModal() {
-  const poi = _capturedPOI;
+let _photoCanvas = null;  // clean canvas without annotation bar
 
+async function showPhotoModal() {
   const canvas = document.createElement('canvas');
   const ctx    = canvas.getContext('2d');
 
   if (window._warpedCanvas) {
-    // Use the perspective-corrected image
     canvas.width  = window._warpedCanvas.width;
     canvas.height = window._warpedCanvas.height;
     ctx.drawImage(window._warpedCanvas, 0, 0);
     window._warpedCanvas = null;
   } else {
-    // Fall back to original photo
     const img = _capturedImg;
     if (!img) return;
     canvas.width  = img.naturalWidth;
@@ -1355,9 +1356,39 @@ async function showPhotoModal() {
     ctx.drawImage(img, 0, 0);
   }
 
-  const W = canvas.width, H = canvas.height;
+  _photoCanvas = canvas;
+
+  const dateSlug = new Date().toISOString().slice(0, 10);
+  currentPhotoBlob  = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+  currentPhotoFname = `invader_${dateSlug}.jpg`;
+
+  const previewUrl = URL.createObjectURL(currentPhotoBlob);
+  document.getElementById('photo-preview').src = previewUrl;
+  document.getElementById('ml-results').textContent = '';
+  document.getElementById('photo-ai-btn').disabled = false;
+
+  const tagBtn = document.getElementById('photo-tag-btn');
+  if (_capturedPOI) {
+    tagBtn.textContent = `⚡ ${_capturedPOI.id}`;
+    tagBtn.classList.remove('hidden');
+  } else {
+    tagBtn.classList.add('hidden');
+  }
+
+  document.getElementById('photo-modal').classList.add('open');
+}
+
+async function annotatePhoto(poi) {
+  if (!_photoCanvas || !poi) return;
+  const src = _photoCanvas;
+  const out = document.createElement('canvas');
+  out.width = src.width; out.height = src.height;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(src, 0, 0);
+
+  const W = out.width, H = out.height;
   const barH = Math.round(H * 0.09);
-  const pad   = Math.round(W * 0.025);
+  const pad  = Math.round(W * 0.025);
 
   ctx.fillStyle = 'rgba(10,10,15,0.78)';
   ctx.fillRect(0, H - barH, W, barH);
@@ -1367,7 +1398,7 @@ async function showPhotoModal() {
   ctx.fillStyle = '#39ff14';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
-  ctx.fillText('👾 ' + (poi ? poi.id : '?'), pad, H - barH / 2);
+  ctx.fillText('👾 ' + poi.id, pad, H - barH / 2);
 
   const dateStr = new Date().toLocaleDateString('en-GB');
   ctx.font = `${Math.round(barH * 0.28)}px "Share Tech Mono", monospace`;
@@ -1376,14 +1407,11 @@ async function showPhotoModal() {
   ctx.fillText(dateStr, W - pad, H - barH / 2);
 
   const dateSlug = new Date().toISOString().slice(0, 10);
-  currentPhotoBlob  = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
-  currentPhotoFname = poi ? `invader_${poi.id}_${dateSlug}.jpg` : `invader_${dateSlug}.jpg`;
-
-  const previewUrl = URL.createObjectURL(currentPhotoBlob);
-  document.getElementById('photo-preview').src = previewUrl;
-  document.getElementById('ml-results').textContent = '';
-  document.getElementById('photo-ai-btn').disabled = !_mlReady;
-  document.getElementById('photo-modal').classList.add('open');
+  URL.revokeObjectURL(document.getElementById('photo-preview').src);
+  currentPhotoBlob  = await new Promise(res => out.toBlob(res, 'image/jpeg', 0.92));
+  currentPhotoFname = `invader_${poi.id}_${dateSlug}.jpg`;
+  document.getElementById('photo-preview').src = URL.createObjectURL(currentPhotoBlob);
+  document.getElementById('photo-tag-btn').classList.add('hidden');
 }
 
 document.getElementById('photo-share-btn').addEventListener('click', async () => {
@@ -1410,11 +1438,13 @@ document.getElementById('photo-ai-btn').addEventListener('click', async () => {
 
 document.getElementById('photo-back-btn').addEventListener('click', () => {
   document.getElementById('photo-modal').classList.remove('open');
+  URL.revokeObjectURL(document.getElementById('photo-preview').src);
   document.getElementById('photo-preview').src = '';
   document.getElementById('ml-results').textContent = '';
   _revokeThumbUrls();
   window._searchCanvas = null;
   currentPhotoBlob = currentPhotoFname = null;
+  _photoCanvas = null;
   if (_capturedImg) showCorrectionModal(_capturedImg, true);
 });
 
@@ -1426,6 +1456,7 @@ document.getElementById('photo-close-btn').addEventListener('click', () => {
   _revokeThumbUrls();
   window._searchCanvas = null;
   currentPhotoBlob = currentPhotoFname = null;
+  _photoCanvas = null;
   _capturedImg = null;
 });
 
@@ -2057,9 +2088,23 @@ function exportDB() {
   a.click();
 }
 
+document.getElementById('photo-tag-btn').addEventListener('click', async () => {
+  if (!_capturedPOI) return;
+  const btn = document.getElementById('photo-tag-btn');
+  btn.disabled = true;
+  await annotatePhoto(_capturedPOI);
+  markVisited(_capturedPOI.id);
+  btn.disabled = false;
+});
+
 function mlFlashFromResult(id) {
   selectPOI(id);
-  if (confirm(`Flash ${id}?`)) markVisited(id);
+  if (!confirm(`Flash ${id}?`)) return;
+  markVisited(id);
+  const poi = allPOI.find(p => p.id === id);
+  if (poi && document.getElementById('photo-modal').classList.contains('open')) {
+    annotatePhoto(poi);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
