@@ -266,7 +266,6 @@
     padding:10px 16px; border:none; border-radius:2px; cursor:pointer;
   }
   #photo-share-btn    { background:var(--cyan);   color:#000; }
-  #photo-download-btn { background:var(--green);  color:#000; }
   #photo-ai-btn       { background:var(--purple); color:#fff; }
   #photo-ai-btn:disabled { opacity:.4; cursor:default; }
   #photo-tag-btn      { background:var(--green); color:#000; }
@@ -286,13 +285,17 @@
     font-family:'Share Tech Mono',monospace; font-size:10px;
     color:var(--cyan); display:flex; align-items:center; gap:6px;
     opacity:1; transition:opacity 1.5s ease;
-    pointer-events:none;
+    pointer-events:none; position:relative; overflow:hidden;
   }
   #ml-status.hidden { opacity:0; }
   #ml-status .ml-dot {
     width:7px; height:7px; border-radius:50%; background:var(--cyan); flex-shrink:0;
   }
   #ml-status .ml-dot.pulsing { animation:ml-pulse 1.2s ease-in-out infinite; }
+  #ml-progress {
+    position:absolute; bottom:0; left:0; height:2px;
+    background:var(--cyan); width:0%; transition:width .3s ease; border-radius:0 0 2px 2px;
+  }
   @keyframes ml-pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
   #ml-results {
     font-family:'Share Tech Mono',monospace; font-size:11px;
@@ -558,7 +561,6 @@
   <img id="photo-preview" alt="">
   <div id="photo-modal-actions">
     <button id="photo-share-btn">⬆ Share</button>
-    <button id="photo-download-btn">⬇ Save</button>
     <button id="photo-ai-btn">👾 Identify</button>
     <button id="photo-tag-btn" class="hidden">⚡ Flash</button>
     <button id="photo-close-btn">✕ Close</button>
@@ -628,7 +630,7 @@
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
 
-<div id="ml-status" class="hidden"><div class="ml-dot"></div><span></span></div>
+<div id="ml-status" class="hidden"><div class="ml-dot"></div><span></span><div id="ml-progress"></div></div>
 
 <div id="toast"></div>
 
@@ -1424,9 +1426,6 @@ document.getElementById('photo-share-btn').addEventListener('click', async () =>
   }
 });
 
-document.getElementById('photo-download-btn').addEventListener('click', () => {
-  if (currentPhotoBlob) downloadBlob(currentPhotoBlob, currentPhotoFname);
-});
 
 document.getElementById('photo-ai-btn').addEventListener('click', async () => {
   const btn = document.getElementById('photo-ai-btn');
@@ -1739,20 +1738,28 @@ async function loadMLAssets() {
   if (_mlLoadStart) return;
   _mlLoadStart = true;
   _mlSetStatus('AI loading…', 'loading');
+  const prog = document.getElementById('ml-progress');
+  const setP = pct => { prog.style.width = pct + '%'; };
+  setP(0);
   try {
+    let done = 0;
+    const total = 6;
+    const step = () => setP(Math.round(++done / total * 85));  // up to 85%, last 15% for session init
+
     const [part0, part1, embBuf, idsJson, thumbBuf, thumbIdxBuf] = await Promise.all([
-      fetch('model.part0').then(r => r.arrayBuffer()),
-      fetch('model.part1').then(r => r.arrayBuffer()),
-      fetch('embeddings.bin').then(r => r.arrayBuffer()),
-      fetch('ids.json').then(r => r.json()),
-      fetch('thumbs.bin').then(r => r.arrayBuffer()),
-      fetch('thumbs_idx.bin').then(r => r.arrayBuffer()),
+      fetch('model.part0').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
+      fetch('model.part1').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
+      fetch('embeddings.bin').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
+      fetch('ids.json').then(r => r.json()).then(v => { step(); return v; }),
+      fetch('thumbs.bin').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
+      fetch('thumbs_idx.bin').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
     ]);
 
     const model = new Uint8Array(part0.byteLength + part1.byteLength);
     model.set(new Uint8Array(part0), 0);
     model.set(new Uint8Array(part1), part0.byteLength);
     _ortSession = await ort.InferenceSession.create(model.buffer);
+    setP(100);
     _embMatrix  = new Float32Array(embBuf);
     _embIds     = idsJson;
     _thumbBin   = new Uint8Array(thumbBuf);
@@ -1762,6 +1769,7 @@ async function loadMLAssets() {
   } catch(e) {
     console.warn('ML assets not available:', e.message);
     _mlLoadStart = false;  // allow retry
+    setP(0);
     _mlSetStatus('AI unavailable', 'error');
     setTimeout(() => document.getElementById('ml-status').classList.add('hidden'), 4000);
   }
