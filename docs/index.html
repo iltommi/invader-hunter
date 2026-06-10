@@ -269,6 +269,7 @@
   #photo-download-btn { background:var(--green);  color:#000; }
   #photo-ai-btn       { background:var(--purple); color:#fff; }
   #photo-ai-btn:disabled { opacity:.4; cursor:default; }
+  #photo-back-btn     { background:transparent; color:var(--yellow); border:1px solid var(--yellow) !important; }
   #photo-close-btn    { background:transparent; color:#888; border:1px solid #444 !important; }
   #ml-status {
     position:fixed; bottom:calc(76px + env(safe-area-inset-bottom,0px)); left:16px;
@@ -551,6 +552,7 @@
     <button id="photo-share-btn">⬆ Share</button>
     <button id="photo-download-btn">⬇ Save</button>
     <button id="photo-ai-btn">👾 Identify</button>
+    <button id="photo-back-btn">↩ Redo</button>
     <button id="photo-close-btn">✕ Close</button>
   </div>
   <div id="ml-results"></div>
@@ -1387,6 +1389,16 @@ document.getElementById('photo-ai-btn').addEventListener('click', async () => {
   btn.disabled = false;
 });
 
+document.getElementById('photo-back-btn').addEventListener('click', () => {
+  document.getElementById('photo-modal').classList.remove('open');
+  document.getElementById('photo-preview').src = '';
+  document.getElementById('ml-results').textContent = '';
+  _revokeThumbUrls();
+  window._searchCanvas = null;
+  currentPhotoBlob = currentPhotoFname = null;
+  if (_capturedImg) showCorrectionModal(_capturedImg);
+});
+
 document.getElementById('photo-close-btn').addEventListener('click', () => {
   document.getElementById('photo-modal').classList.remove('open');
   URL.revokeObjectURL(document.getElementById('photo-preview').src);
@@ -1395,6 +1407,7 @@ document.getElementById('photo-close-btn').addEventListener('click', () => {
   _revokeThumbUrls();
   window._searchCanvas = null;
   currentPhotoBlob = currentPhotoFname = null;
+  _capturedImg = null;
 });
 
 // Hide share button if Web Share API unavailable
