@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""Pre-commit hook: stamp docs/index.html with current build date/time."""
+import re, datetime, subprocess, sys
+from pathlib import Path
+
+repo = Path(__file__).resolve().parents[1]
+target = repo / 'docs' / 'index.html'
+
+if not target.exists():
+    sys.exit(0)
+
+txt = target.read_text()
+ts  = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+new, n = re.subn(r'(__BUILD__|\d{4}-\d{2}-\d{2} \d{2}:\d{2})', ts, txt, count=1)
+
+if n:
+    target.write_text(new)
+    subprocess.run(['git', 'add', str(target)], check=True)
