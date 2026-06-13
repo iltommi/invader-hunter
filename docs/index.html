@@ -634,7 +634,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-13 15:18</div>
+    <div class="about-build" id="about-build-date">build 2026-06-13 15:22</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -2253,8 +2253,7 @@ function showNearestMosaic() {
   if (!candidates.length) { showToast('No unflashed invaders with location!'); return; }
   _nearestList = candidates
     .map(p => ({ ...p, dist: _haversineKm(userPos.lat, userPos.lng, p.lat, p.lng) }))
-    .sort((a, b) => a.dist - b.dist)
-    .slice(0, 5);
+    .sort((a, b) => a.dist - b.dist);
   _nearestIdx = 0;
   _showNearestCard();
   document.getElementById('nearest-modal').classList.add('open');
