@@ -491,6 +491,54 @@
   #fab-list:hover { box-shadow: 0 0 30px rgba(0,245,255,.5); }
   #fab-locate.tracking { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 20px rgba(0,245,255,.4); animation: pulse-loc .2s ease; }
 
+  #fab-nearest {
+    position: absolute;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 74px; z-index: 999;
+    background: var(--surface); border: 2px solid var(--yellow); color: var(--yellow);
+    font-size: 18px;
+    width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 0 20px rgba(255,214,10,.3); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; padding: 0;
+  }
+  #fab-nearest:hover { box-shadow: 0 0 30px rgba(255,214,10,.5); }
+
+  /* ── NEAREST MODAL ── */
+  #nearest-modal {
+    display:none; position:fixed; inset:0; z-index:9400;
+    background:rgba(0,0,0,.88);
+    flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; padding:24px;
+  }
+  #nearest-modal.open { display:flex; }
+  #nearest-title {
+    font-family:'Press Start 2P',monospace; font-size:9px; color:var(--yellow); text-align:center;
+  }
+  #nearest-grid {
+    display:flex; flex-wrap:wrap; gap:12px; justify-content:center;
+    max-width:min(95vw,540px);
+  }
+  .nearest-card {
+    cursor:pointer; text-align:center;
+    background:var(--surface); border:2px solid var(--border);
+    border-radius:4px; padding:8px; width:88px;
+    transition:border-color .15s;
+  }
+  .nearest-card:hover { border-color:var(--yellow); }
+  .nearest-card img {
+    width:72px; height:72px; object-fit:cover;
+    border-radius:2px; display:block; margin:0 auto 5px;
+  }
+  .nearest-card-id {
+    font-family:'Press Start 2P',monospace; font-size:6px; color:var(--yellow); margin-bottom:2px;
+  }
+  .nearest-card-dist { font-size:9px; color:#9090a0; }
+  #nearest-close {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 20px; background:transparent; color:#888;
+    border:1px solid #444; border-radius:2px; cursor:pointer;
+  }
+
   @keyframes pulse-loc {
     0% { transform: scale(1); }
     50% { transform: scale(1.15); }
@@ -581,7 +629,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-10 23:16</div>
+    <div class="about-build" id="about-build-date">build 2026-06-13 13:25</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -612,6 +660,12 @@
   </div>
   <button id="photo-back-btn">↩ Redo perspective</button>
   <div id="ml-results"></div>
+</div>
+
+<div id="nearest-modal">
+  <div id="nearest-title"></div>
+  <div id="nearest-grid"></div>
+  <button id="nearest-close" onclick="document.getElementById('nearest-modal').classList.remove('open')">✕ Close</button>
 </div>
 
 <div id="loader">
@@ -672,6 +726,7 @@
     <div class="poi-list" id="poi-list"></div>
   </div>
   <button id="fab-locate" onclick="toggleLocate()" title="My location">✕</button>
+  <button id="fab-nearest" onclick="showNearestMosaic()" title="5 nearest unflashed">🎯</button>
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
 
@@ -2169,6 +2224,42 @@ function mlFlashFromResult(id) {
   const poi = allPOI.find(p => p.id === id);
   if (poi && document.getElementById('photo-modal').classList.contains('open')) {
     annotatePhoto(poi);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// NEAREST MOSAIC
+// ─────────────────────────────────────────────────────────────
+function showNearestMosaic() {
+  if (!userPos) { showToast('⚠ Enable location first'); return; }
+  const visited = getVisited();
+  const candidates = allPOI.filter(p => p.lat && p.lng && !visited[p.id] && p.status !== 'destroyed');
+  if (!candidates.length) { showToast('No unflashed invaders with location!'); return; }
+  const nearest = candidates
+    .map(p => ({ ...p, dist: _haversineKm(userPos.lat, userPos.lng, p.lat, p.lng) }))
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 5);
+  document.getElementById('nearest-title').textContent = `${nearest.length} NEAREST UNFLASHED`;
+  const grid = document.getElementById('nearest-grid');
+  grid.innerHTML = nearest.map(p =>
+    `<div class="nearest-card" data-id="${p.id}" onclick="nearestFlash('${escId(p.id)}')">` +
+    `<img src="${spotterUrl(p.id)}" alt="${p.id}" loading="lazy">` +
+    `<div class="nearest-card-id">${p.id}</div>` +
+    `<div class="nearest-card-dist">${_fmtDist(p.dist)}</div>` +
+    `</div>`
+  ).join('');
+  document.getElementById('nearest-modal').classList.add('open');
+}
+
+function nearestFlash(id) {
+  markVisited(id);
+  showToast(`⚡ ${id} flashed!`);
+  const grid = document.getElementById('nearest-grid');
+  for (const card of grid.querySelectorAll('.nearest-card')) {
+    if (card.dataset.id === id) { card.remove(); break; }
+  }
+  if (!grid.children.length) {
+    document.getElementById('nearest-modal').classList.remove('open');
   }
 }
 
