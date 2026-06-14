@@ -638,7 +638,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-14 21:38</div>
+    <div class="about-build" id="about-build-date">build 2026-06-14 21:48</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -1196,7 +1196,7 @@ function renderMapMarkers(visited = getVisited()) {
     _heatLayer = L.heatLayer(points, {
       radius: 20, blur: 15, maxZoom: 16, minOpacity: 0.4,
       max: _heatMax(),
-      gradient: { 0.3: '#00f5ff', 0.6: '#39ff14', 1.0: '#ff2d55' },
+      gradient: { 0.0: '#352A87', 0.15: '#0F5CDD', 0.3: '#038EC1', 0.45: '#20ABAF', 0.6: '#64B98C', 0.75: '#ABB76A', 0.88: '#E4BE42', 1.0: '#F9FB14' },
     }).addTo(leafletMap);
     return;
   }
