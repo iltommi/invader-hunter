@@ -18,6 +18,7 @@
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <style>
   :root {
@@ -160,8 +161,8 @@
   .filter-btn.active { color:var(--cyan); }
   .filter-btn:hover { color:var(--text); }
 
-  /* Circular icon buttons (theme toggle, gear) */
-  #btn-theme, #data-menu-btn {
+  /* Circular icon buttons (theme toggle, gear, heatmap) */
+  #btn-theme, #data-menu-btn, #btn-heatmap {
     background: var(--surface); border: 1px solid var(--border); color: var(--text);
     width: 30px; height: 30px; border-radius: 50%;
     cursor: pointer; transition: all .2s;
@@ -170,7 +171,10 @@
   }
   #btn-theme { font-size: 14px; }
   #data-menu-btn { font-size: 16px; }
+  #btn-heatmap { font-size: 14px; }
   #btn-theme:hover, #data-menu-btn:hover { border-color: var(--cyan); }
+  #btn-heatmap:hover { border-color: var(--red); }
+  #btn-heatmap.active { border-color: var(--red); background: rgba(255,45,85,.15); }
 
   #toolbar-photo-btn {
     background: var(--red); border: 1px solid var(--red); color: #fff;
@@ -634,7 +638,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-13 15:22</div>
+    <div class="about-build" id="about-build-date">build 2026-06-14 21:20</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -702,6 +706,7 @@
     <div class="stat-val" id="stat-remaining">–</div>
   </div>
   <div class="ml-auto">
+    <button id="btn-heatmap" onclick="toggleViewMode()" title="Toggle heatmap">🔥</button>
     <button id="toolbar-photo-btn" onclick="takePhoto()" title="Take photo">📷</button>
     <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
     <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
@@ -1154,11 +1159,32 @@ const STATUS_COLOR = {
   hidden:    '#bf5af2',
 };
 
+let _heatLayer = null;
+let _viewMode  = 'cluster'; // 'cluster' | 'heat'
+
+function toggleViewMode() {
+  _viewMode = _viewMode === 'cluster' ? 'heat' : 'cluster';
+  document.getElementById('btn-heatmap').classList.toggle('active', _viewMode === 'heat');
+  renderMapMarkers();
+}
+
 function renderMapMarkers(visited = getVisited()) {
   if (!clusterGroup) return;
 
+  if (_heatLayer) { leafletMap.removeLayer(_heatLayer); _heatLayer = null; }
   clusterGroup.clearLayers();
   markerMap = {};
+
+  if (_viewMode === 'heat') {
+    const points = filteredPOI
+      .filter(p => p.lat && p.lng)
+      .map(p => [p.lat, p.lng, 1]);
+    _heatLayer = L.heatLayer(points, {
+      radius: 20, blur: 15, maxZoom: 16,
+      gradient: { 0.3: '#00f5ff', 0.6: '#39ff14', 1.0: '#ff2d55' },
+    }).addTo(leafletMap);
+    return;
+  }
 
   filteredPOI.forEach(p => {
     if (!p.lat || !p.lng) return;  // no coords — skip map marker, still in list
