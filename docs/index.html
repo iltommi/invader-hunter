@@ -638,7 +638,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-14 21:48</div>
+    <div class="about-build" id="about-build-date">build 2026-06-15 09:59</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -987,9 +987,10 @@ async function loadData() {
 // MAP INIT
 // ─────────────────────────────────────────────────────────────
 function initMap() {
+  const _sv = (() => { try { return JSON.parse(localStorage.getItem('invader_map_view_v1')); } catch { return null; } })();
   leafletMap = L.map('map', {
-    center: [48.857, 2.347],
-    zoom: 13,
+    center: _sv ? [_sv.lat, _sv.lng] : [48.857, 2.347],
+    zoom:   _sv ? _sv.zoom           : 13,
     maxZoom: 22,
     zoomControl: true,
   });
@@ -1038,6 +1039,8 @@ function initMap() {
   leafletMap.on('moveend zoomend', () => {
     renderList();
     if (_viewMode === 'heat') _updateHeatMax();
+    const c = leafletMap.getCenter();
+    localStorage.setItem('invader_map_view_v1', JSON.stringify({ lat: c.lat, lng: c.lng, zoom: leafletMap.getZoom() }));
   });
 }
 
@@ -1735,9 +1738,15 @@ let locAccCircle = null;
 let locWatchId = null;
 let isTracking = false;
 let userPos    = null;   // {lat, lng} updated by watchPosition
+let _centerOnNextFix = false;
 
 function toggleLocate() {
-  if (isTracking) stopLocate(); else startLocate();
+  if (!isTracking) {
+    _centerOnNextFix = true;
+    startLocate();
+  } else if (userPos) {
+    leafletMap.setView([userPos.lat, userPos.lng], Math.max(leafletMap.getZoom(), 16), { animate: true });
+  }
 }
 
 function startLocate() {
@@ -1791,6 +1800,10 @@ function onLocation(pos) {
       iconAnchor: [8, 8],
     });
     locMarker = L.marker(latlng, { icon: dotIcon, zIndexOffset: 1000 }).addTo(leafletMap);
+  }
+
+  if (_centerOnNextFix) {
+    _centerOnNextFix = false;
     leafletMap.setView(latlng, Math.max(leafletMap.getZoom(), 16), { animate: true });
   }
 }
