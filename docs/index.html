@@ -638,7 +638,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-18 19:15</div>
+    <div class="about-build" id="about-build-date">build 2026-06-18 19:18</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -725,7 +725,6 @@
   <div class="data-menu-item filter-menu-item" data-key="destroyed" onclick="setFilter('destroyed')">💀 Destroyed</div>
   <div class="data-menu-item filter-menu-item" data-key="all"       onclick="setFilter('all')">👾 All</div>
   <div style="height:1px;background:var(--border)"></div>
-  <div class="data-menu-item" onclick="exportTXT();closeDataMenu()">⬇ Export</div>
   <div class="data-menu-item" id="share-txt-item" onclick="shareTXT();closeDataMenu()">⤴ Share</div>
   <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
   <div class="data-menu-item" onclick="exportDB();closeDataMenu()">⬇ Export DB</div>
@@ -811,15 +810,6 @@ function toggleVisited(id) {
 
 function clearVisited() { localStorage.removeItem(STORAGE_KEY); refreshAll(); }
 
-function exportTXT() {
-  const v = getVisited();
-  if (!Object.keys(v).length) { alert('Nothing flashed yet!'); return; }
-  const text = JSON.stringify(Object.keys(v));
-  const a = document.createElement('a');
-  a.href = 'data:text/plain,' + encodeURIComponent(text);
-  a.download = 'invaders_flashed.txt';
-  a.click();
-}
 
 async function shareTXT() {
   const v = getVisited();
