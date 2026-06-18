@@ -638,7 +638,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-15 09:59</div>
+    <div class="about-build" id="about-build-date">build 2026-06-18 19:15</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -726,6 +726,7 @@
   <div class="data-menu-item filter-menu-item" data-key="all"       onclick="setFilter('all')">👾 All</div>
   <div style="height:1px;background:var(--border)"></div>
   <div class="data-menu-item" onclick="exportTXT();closeDataMenu()">⬇ Export</div>
+  <div class="data-menu-item" id="share-txt-item" onclick="shareTXT();closeDataMenu()">⤴ Share</div>
   <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
   <div class="data-menu-item" onclick="exportDB();closeDataMenu()">⬇ Export DB</div>
   <div class="data-menu-item" onclick="document.getElementById('import-db-input').click();closeDataMenu()">⬆ Import DB</div>
@@ -818,6 +819,18 @@ function exportTXT() {
   a.href = 'data:text/plain,' + encodeURIComponent(text);
   a.download = 'invaders_flashed.txt';
   a.click();
+}
+
+async function shareTXT() {
+  const v = getVisited();
+  if (!Object.keys(v).length) { alert('Nothing flashed yet!'); return; }
+  const text = JSON.stringify(Object.keys(v));
+  const file = new File([text], 'invaders_flashed.txt', { type: 'text/plain' });
+  try {
+    await navigator.share({ files: [file], title: 'Invaders flashed' });
+  } catch(err) {
+    if (err.name !== 'AbortError') alert('Share failed: ' + err.message);
+  }
 }
 
 function importFromText(text) {
@@ -1621,7 +1634,10 @@ document.getElementById('photo-close-btn').addEventListener('click', () => {
 });
 
 // Hide share button if Web Share API unavailable
-if (!navigator.share) document.getElementById('photo-share-btn').style.display = 'none';
+if (!navigator.share) {
+  document.getElementById('photo-share-btn').style.display = 'none';
+  document.getElementById('share-txt-item').style.display = 'none';
+}
 
 function downloadBlob(blob, fname) {
   const url = URL.createObjectURL(blob);
