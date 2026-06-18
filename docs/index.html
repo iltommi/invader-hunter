@@ -727,7 +727,7 @@
   <div style="height:1px;background:var(--border)"></div>
   <div class="data-menu-item" id="share-txt-item" onclick="shareTXT();closeDataMenu()">⤴ Share</div>
   <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
-  <div class="data-menu-item" onclick="exportDB();closeDataMenu()">⬇ Export DB</div>
+  <div class="data-menu-item" id="share-db-item" onclick="shareDB();closeDataMenu()">⤴ Share DB</div>
   <div class="data-menu-item" onclick="document.getElementById('import-db-input').click();closeDataMenu()">⬆ Import DB</div>
   <input type="file" id="import-db-input" accept=".json" style="display:none" onchange="importDB(event)">
   <div class="data-menu-item data-menu-danger" onclick="if(confirm('Reset all flashed mosaics?')){clearVisited();closeDataMenu()}">⟳ Reset</div>
@@ -1627,6 +1627,7 @@ document.getElementById('photo-close-btn').addEventListener('click', () => {
 if (!navigator.share) {
   document.getElementById('photo-share-btn').style.display = 'none';
   document.getElementById('share-txt-item').style.display = 'none';
+  document.getElementById('share-db-item').style.display = 'none';
 }
 
 function downloadBlob(blob, fname) {
@@ -2270,15 +2271,17 @@ async function importDB(event) {
   reader.readAsText(file);
 }
 
-function exportDB() {
+async function shareDB() {
   const coords = getLocalCoords();
   const patched = _rawItems.map(item =>
     (!item.lat && coords[item.id]) ? { ...item, ...coords[item.id] } : item
   );
-  const a = document.createElement('a');
-  a.href = 'data:application/json,' + encodeURIComponent(JSON.stringify(patched));
-  a.download = 'world_invaders.json';
-  a.click();
+  const file = new File([JSON.stringify(patched)], 'world_invaders.json', { type: 'application/json' });
+  try {
+    await navigator.share({ files: [file], title: 'Invaders DB' });
+  } catch(err) {
+    if (err.name !== 'AbortError') alert('Share failed: ' + err.message);
+  }
 }
 
 document.getElementById('photo-tag-btn').addEventListener('click', async () => {
