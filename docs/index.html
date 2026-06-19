@@ -349,7 +349,7 @@
     background:transparent; color:#888; border:1px solid #444;
   }
 
-  /* ── COORDS MODAL ── */
+  /* ── ABOUT MODAL ── */
   #about-modal {
     display:none; position:fixed; inset:0; z-index:9300;
     background:rgba(0,0,0,.88);
@@ -674,7 +674,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-19</div>
+    <div class="about-build" id="about-build-date">build 2026-06-19b</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -759,7 +759,7 @@
     <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
     <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
     <input type="file" id="import-input" accept=".txt" style="display:none" onchange="importTXT(event)">
-    <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="photo-input" accept="image/*" style="display:none">
   </div>
 </div>
 
@@ -791,7 +791,7 @@
     <div class="sidebar-header" onclick="handleSidebarClick()">📡 <span class="sidebar-title">POI LIST <span id="list-count" style="color:#606080;margin-left:8px"></span></span> <span id="sheet-arrow" style="float:right;color:#606080">✕</span></div>
     <div class="poi-list" id="poi-list"></div>
   </div>
-  <button id="fab-locate" onclick="toggleLocate()" title="My location">✕</button>
+  <button id="fab-locate" onclick="toggleLocate()" title="My location">◎</button>
   <button id="fab-nearest" onclick="showNearestMosaic()" title="5 nearest unflashed">🎯</button>
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
@@ -889,7 +889,7 @@ async function importFromText(text, skipDialog = false) {
   if (!Array.isArray(ids)) throw new Error('Expected an array');
   const choice = skipDialog ? 'merge' : await _askImportChoice(ids.length);
   if (!choice) return;
-  const incoming = Object.fromEntries(ids.map(id => [id, 1]));
+  const incoming = Object.fromEntries(ids.map(id => [id, Date.now()]));
   const base = choice === 'replace' ? {} : getVisited();
   saveVisited({ ...base, ...incoming });
   refreshAll();
@@ -1191,6 +1191,8 @@ function updateStats(visited = getVisited()) {
   document.getElementById('stat-pct').textContent      = pct + '%';
   document.getElementById('stat-destroyed').textContent = allPOI.filter(p => p.status === 'destroyed').length.toLocaleString();
   document.getElementById('stat-nocoords').textContent  = allPOI.filter(p => !p.lat).length.toLocaleString();
+  const nearCount = allPOI.filter(p => p.lat && p.lng && !visited[p.id] && p.status !== 'destroyed').length;
+  document.getElementById('fab-nearest').title = `${nearCount} unflashed with location`;
 }
 
 function toggleStatPopup(e) {
@@ -1299,7 +1301,9 @@ function renderMapMarkers(visited = getVisited()) {
 }
 
 function spotterUrl(id) {
-  const [code, num] = id.split('_');
+  const parts = id.split('_');
+  if (parts.length < 2) return '';
+  const [code, num] = parts;
   const width = cityPadding[code] || String(num).length;
   return `https://www.invader-spotter.art/grosplan/${code}/${code}_${num.padStart(width,'0')}-grosplan.png`;
 }
@@ -1318,13 +1322,13 @@ function buildPopup(p) {
            onerror="this.outerHTML='<a class=\\'popup-search-link\\' href=\\'${spotterUrl(p.id)}\\' target=\\'_blank\\' rel=\\'noopener\\'>🕹 Invader Spotter</a>'">
     </a>
     <div class="popup-actions">
-      <button class="popup-action" id="pbtn-${p.id}" title="${isV?'Flashed':'Flash it'}">${isV?'✅':'⚡'}</button>
+      <button class="popup-action" data-flash title="${isV?'Flashed':'Flash it'}">${isV?'✅':'⚡'}</button>
       <a class="popup-action" href="https://www.google.com/search?q=${encodeURIComponent(p.id+' invader')}&tbm=isch" target="_blank" rel="noopener" title="Google Images">🔍</a>
     </div>`;
-  div.querySelector(`#pbtn-${p.id}`).addEventListener('click', () => {
+  div.querySelector('[data-flash]').addEventListener('click', () => {
     toggleVisited(p.id);
     const isNowV = !!getVisited()[p.id];
-    const btn = div.querySelector(`#pbtn-${p.id}`);
+    const btn = div.querySelector('[data-flash]');
     btn.textContent = isNowV ? '✅' : '⚡';
     btn.title = isNowV ? 'Flashed' : 'Flash it';
   });
@@ -1500,26 +1504,26 @@ document.getElementById('correct-reset-btn').addEventListener('click', () => {
 document.getElementById('correct-apply-btn').addEventListener('click', () => {
   const canvas = document.getElementById('correct-canvas');
   _savedCorners = _corners.map(([x,y]) => [x / canvas.width, y / canvas.height]);
-  document.getElementById('correct-modal').classList.remove('open');
-  // Scale corners back to original image resolution
   const srcCorners = _corners.map(([x,y]) => [x*_correctScale, y*_correctScale]);
   const iw = _correctImg.naturalWidth, ih = _correctImg.naturalHeight;
+  document.getElementById('correct-modal').classList.remove('open');
 
-  // Draw original image to an offscreen canvas to get ImageData
-  const offscreen = document.createElement('canvas');
-  offscreen.width = iw; offscreen.height = ih;
-  offscreen.getContext('2d').drawImage(_correctImg, 0, 0);
-  const srcData = offscreen.getContext('2d').getImageData(0, 0, iw, ih);
+  // Yield to browser so the modal hides before the blocking warp computation
+  requestAnimationFrame(() => setTimeout(() => {
+    const offscreen = document.createElement('canvas');
+    offscreen.width = iw; offscreen.height = ih;
+    offscreen.getContext('2d').drawImage(_correctImg, 0, 0);
+    const srcData = offscreen.getContext('2d').getImageData(0, 0, iw, ih);
 
-  const warped = warpPerspective(srcData, iw, ih, srcCorners, 512);
-  const warpCanvas = document.createElement('canvas');
-  warpCanvas.width = warpCanvas.height = 512;
-  warpCanvas.getContext('2d').putImageData(warped, 0, 0);
+    const warped = warpPerspective(srcData, iw, ih, srcCorners, 512);
+    const warpCanvas = document.createElement('canvas');
+    warpCanvas.width = warpCanvas.height = 512;
+    warpCanvas.getContext('2d').putImageData(warped, 0, 0);
 
-  // Store warped result for the recognition pipeline, then show photo modal
-  window._warpedCanvas  = warpCanvas;
-  window._searchCanvas  = warpCanvas;
-  showPhotoModal();
+    window._warpedCanvas  = warpCanvas;
+    window._searchCanvas  = warpCanvas;
+    showPhotoModal();
+  }, 0));
 });
 
 document.getElementById('correct-skip-btn').addEventListener('click', () => {
@@ -1690,6 +1694,7 @@ document.getElementById('photo-close-btn').addEventListener('click', () => {
   currentPhotoBlob = currentPhotoFname = null;
   _photoCanvas = null;
   _capturedImg = null;
+  _capturedPOI = null;
 });
 
 // Hide share button if Web Share API unavailable
@@ -1714,10 +1719,8 @@ const STATUS_ICON = { ok:'👾', damaged:'⚠️', destroyed:'💀', hidden:'�
 function renderList(visited = getVisited()) {
   const list = document.getElementById('poi-list');
 
-  const search = document.getElementById('search').value.trim().toUpperCase();
   const bounds = leafletMap ? leafletMap.getBounds() : null;
-  const visible = allPOI.filter(p => {
-    if (search && !(p.id || '').toUpperCase().includes(search)) return false;
+  const visible = filteredPOI.filter(p => {
     if (!p.lat || !p.lng) return false;
     if (bounds && !bounds.contains([p.lat, p.lng])) return false;
     return true;
@@ -1820,8 +1823,8 @@ function toggleLocate() {
   if (!isTracking) {
     _centerOnNextFix = true;
     startLocate();
-  } else if (userPos) {
-    leafletMap.setView([userPos.lat, userPos.lng], Math.max(leafletMap.getZoom(), 16), { animate: true });
+  } else {
+    stopLocate();
   }
 }
 
@@ -1846,7 +1849,7 @@ function stopLocate() {
   if (locWatchId !== null) navigator.geolocation.clearWatch(locWatchId);
   locWatchId = null;
   document.getElementById('fab-locate').classList.remove('tracking');
-  document.getElementById('fab-locate').textContent = '✕';
+  document.getElementById('fab-locate').textContent = '◎';
   if (locMarker)    { locMarker.remove();    locMarker = null; }
   if (locAccCircle) { locAccCircle.remove(); locAccCircle = null; }
 }
@@ -1936,9 +1939,9 @@ if ('serviceWorker' in navigator) {
       })
       .catch(e => console.warn('SW failed:', e));
 
-    // When a new SW takes over, reload to get fresh files
+    // When a new SW takes over, notify — don't hard-reload mid-session
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.location.reload();
+      showToast('✓ App updated — refresh to apply');
     });
   });
 }
@@ -2197,7 +2200,7 @@ function gridSnapCanvas(src) {
 
 async function runMLSearch(canvas, top = 5) {
   const el = document.getElementById('ml-results');
-  if (!_mlReady) { el.textContent = ''; return; }
+  if (!_mlReady || !canvas) { el.textContent = ''; return; }
 
   _revokeThumbUrls();
   el.textContent = 'identifying…';
@@ -2349,7 +2352,7 @@ async function shareDB() {
   const patched = _rawItems.map(item =>
     (!item.lat && coords[item.id]) ? { ...item, ...coords[item.id] } : item
   );
-  const file = new File([JSON.stringify(patched)], 'world_invaders.json', { type: 'application/json' });
+  const file = new File([JSON.stringify(patched)], 'world_invaders.txt', { type: 'text/plain' });
   try {
     await navigator.share({ files: [file], title: 'Invaders DB' });
   } catch(err) {
@@ -2396,6 +2399,8 @@ function showNearestMosaic() {
 }
 
 function _showNearestCard() {
+  const visited = getVisited();
+  while (_nearestIdx < _nearestList.length && visited[_nearestList[_nearestIdx].id]) _nearestIdx++;
   if (_nearestIdx >= _nearestList.length) {
     document.getElementById('nearest-modal').classList.remove('open');
     return;
