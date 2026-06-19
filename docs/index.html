@@ -426,6 +426,42 @@
   .progress-bar { width:300px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
   .progress-fill { height:100%; background:var(--green); width:0%; transition:width .3s; box-shadow:0 0 8px var(--green); }
 
+  /* ── IMPORT CHOICE MODAL ── */
+  #import-choice-modal {
+    display:none; position:fixed; inset:0; z-index:9500;
+    background:rgba(0,0,0,.88);
+    flex-direction:column; align-items:center; justify-content:center;
+    gap:0; padding:32px 24px;
+  }
+  #import-choice-modal.open { display:flex; }
+  #import-choice-box {
+    background:var(--surface); border:1px solid var(--cyan); border-radius:2px;
+    padding:24px 28px; max-width:320px; width:100%;
+    font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--text);
+    display:flex; flex-direction:column; gap:16px;
+  }
+  #import-choice-box h2 {
+    font-family:'Press Start 2P',monospace; font-size:9px;
+    color:var(--cyan); margin:0; text-align:center;
+  }
+  #import-choice-box p { font-size:11px; color:#9090a0; margin:0; text-align:center; }
+  #import-choice-actions { display:flex; gap:10px; justify-content:center; }
+  #import-choice-merge {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 16px; border:none; border-radius:2px; cursor:pointer;
+    background:var(--cyan); color:#000;
+  }
+  #import-choice-replace {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 16px; border:none; border-radius:2px; cursor:pointer;
+    background:var(--red); color:#fff;
+  }
+  #import-choice-cancel {
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 16px; border-radius:2px; cursor:pointer;
+    background:transparent; color:#888; border:1px solid #444;
+  }
+
   /* ── TOAST ── */
   #toast {
     position:fixed; bottom:calc(24px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%) translateY(20px);
@@ -638,7 +674,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-18 19:18</div>
+    <div class="about-build" id="about-build-date">build 2026-06-19</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -682,6 +718,18 @@
     <button id="nearest-yes">⚡ Yes</button>
     <button id="nearest-no">→ No</button>
     <button id="nearest-cancel">✕ Cancel</button>
+  </div>
+</div>
+
+<div id="import-choice-modal">
+  <div id="import-choice-box">
+    <h2>IMPORT FLASHED</h2>
+    <p id="import-choice-desc"></p>
+    <div id="import-choice-actions">
+      <button id="import-choice-merge">⊕ Merge</button>
+      <button id="import-choice-replace">⟳ Replace</button>
+      <button id="import-choice-cancel">✕</button>
+    </div>
   </div>
 </div>
 
@@ -823,21 +871,37 @@ async function shareTXT() {
   }
 }
 
-function importFromText(text) {
+function _askImportChoice(count) {
+  return new Promise(resolve => {
+    document.getElementById('import-choice-desc').textContent =
+      `${count} flashed invader${count !== 1 ? 's' : ''} incoming`;
+    const modal = document.getElementById('import-choice-modal');
+    modal.classList.add('open');
+    const cleanup = choice => { modal.classList.remove('open'); resolve(choice); };
+    document.getElementById('import-choice-merge')  .onclick = () => cleanup('merge');
+    document.getElementById('import-choice-replace').onclick = () => cleanup('replace');
+    document.getElementById('import-choice-cancel') .onclick = () => cleanup(null);
+  });
+}
+
+async function importFromText(text, skipDialog = false) {
   const ids = JSON.parse(text);
   if (!Array.isArray(ids)) throw new Error('Expected an array');
+  const choice = skipDialog ? 'merge' : await _askImportChoice(ids.length);
+  if (!choice) return;
   const incoming = Object.fromEntries(ids.map(id => [id, 1]));
-  saveVisited({ ...getVisited(), ...incoming });
+  const base = choice === 'replace' ? {} : getVisited();
+  saveVisited({ ...base, ...incoming });
   refreshAll();
-  showToast(`✓ Imported ${ids.length} flashed invader${ids.length !== 1 ? 's' : ''}`);
+  showToast(`✓ ${choice === 'replace' ? 'Replaced' : 'Merged'} ${ids.length} flashed invader${ids.length !== 1 ? 's' : ''}`);
 }
 
 function importTXT(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    try { importFromText(e.target.result); }
+  reader.onload = async e => {
+    try { await importFromText(e.target.result); }
     catch(err) { alert('Could not read file: ' + err.message); }
     event.target.value = '';
   };
@@ -851,9 +915,14 @@ async function checkSharedFile() {
     const cache = await caches.open('invader-share-v1');
     const response = await cache.match('./shared-import');
     if (!response) return;
+    const filename = response.headers.get('X-Filename') || '';
     const text = await response.text();
     await cache.delete('./shared-import');
-    importFromText(text);
+    if (filename === 'world_invaders.txt') {
+      await importDBFromText(text);
+    } else {
+      await importFromText(text);
+    }
   } catch(err) {
     alert('Could not read shared file: ' + err.message);
   }
@@ -2249,20 +2318,24 @@ function saveCoordsFromModal() {
 // EXPORT DB
 // ─────────────────────────────────────────────────────────────
 
+async function importDBFromText(text) {
+  const raw = JSON.parse(text);
+  const items = Array.isArray(raw) ? raw : raw.invaders ? raw.invaders : Object.values(raw).flat();
+  if (!items.length) throw new Error('No POIs found');
+  const db = await idbOpen();
+  await idbSet(db, 'pois', { items, etag: '' });
+  processItems(items);
+  refreshAll();
+  showToast(`✓ Loaded ${items.length} POIs`);
+}
+
 async function importDB(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = async e => {
     try {
-      const raw = JSON.parse(e.target.result);
-      const items = Array.isArray(raw) ? raw : raw.invaders ? raw.invaders : Object.values(raw).flat();
-      if (!items.length) throw new Error('No POIs found');
-      const db = await idbOpen();
-      await idbSet(db, 'pois', { items, etag: '' });
-      processItems(items);
-      refreshAll();
-      showToast(`✓ Loaded ${items.length} POIs`);
+      await importDBFromText(e.target.result);
     } catch(err) {
       alert('Could not read file: ' + err.message);
     }

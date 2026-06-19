@@ -1,4 +1,4 @@
-const CACHE       = 'invader-hunter-v7';
+const CACHE       = 'invader-hunter-v8';
 const SHARE_CACHE = 'invader-share-v1';
 
 const PRECACHE = [
@@ -44,7 +44,7 @@ self.addEventListener('fetch', e => {
         const text = await file.text();
         const cache = await caches.open(SHARE_CACHE);
         await cache.put('./shared-import', new Response(text, {
-          headers: { 'Content-Type': 'text/plain' }
+          headers: { 'Content-Type': 'text/plain', 'X-Filename': file.name }
         }));
       }
       return Response.redirect('./index.html?from=share', 303);
