@@ -1007,7 +1007,7 @@ function initMap() {
     center: _sv ? [_sv.lat, _sv.lng] : [48.857, 2.347],
     zoom:   _sv ? _sv.zoom           : 13,
     maxZoom: 22,
-    zoomControl: true,
+    zoomControl: false,
   });
 
   window._tileLayer = L.tileLayer(isLight
