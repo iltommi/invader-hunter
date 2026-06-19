@@ -52,20 +52,24 @@
     font-family: 'Share Tech Mono', monospace;
     background: var(--bg);
     color: var(--text);
-    height: 100vh;
-    height: 100svh; /* shrinks to exclude browser chrome on Android Chrome */
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
   }
 
-  /* ── TOPBAR ── */
+  .main {
+    width: 100vw; height: 100vh; height: 100svh;
+    position: relative; display: flex; overflow: hidden;
+  }
+
+  /* ── FLOATING COUNTER ── */
   .stat-val { font-family:'Press Start 2P',monospace; font-size:9px; color:var(--cyan); text-shadow:0 0 6px var(--cyan); }
 
   #stat-remaining-btn {
-    display:flex; flex-direction:column; align-items:center; gap:1px;
-    cursor:pointer; flex-shrink:0;
-    padding: 2px 6px; border-radius:2px; transition:background .15s;
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px; z-index: 999;
+    background: var(--surface); border: 1px solid var(--cyan);
+    border-radius: 2px; padding: 8px 12px;
+    cursor: pointer; display: flex; align-items: center; transition: background .15s;
+    box-shadow: 0 0 12px rgba(0,245,255,.15);
   }
   #stat-remaining-btn:hover { background:rgba(0,245,255,.08); }
 
@@ -109,88 +113,26 @@
   .data-menu-danger { color:var(--red); }
   .data-menu-danger:hover { background:rgba(255,45,85,.08); color:var(--red); }
 
-  .topbar-sep { width:1px; height:20px; background:var(--border); flex-shrink:0; }
-
-  /* ── CONTROLS ── */
-  .controls {
-    background: var(--surface);
-    border-bottom: 2px solid var(--green);
-    padding: 6px 16px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 10;
-  }
-  .controls::after {
-    content:'';
-    position:absolute;
-    inset:0;
-    background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,245,255,.015) 2px,rgba(0,245,255,.015) 4px);
-    pointer-events:none;
-  }
-
-  /* Shared height/font for controls */
-  .controls input,
-  .filter-btn {
-    height: 30px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    padding: 0 10px;
-    border-radius: 2px;
-    box-sizing: border-box;
-    line-height: 28px;
-  }
-
-  .controls input {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    outline: none;
-    transition: border-color .2s;
-  }
-  .controls input:focus { border-color: var(--cyan); }
-
-  .filter-btn {
-    background: transparent; border: none; color: #888;
-    cursor: pointer; transition: all .2s; font-size: 13px;
-  }
-  #btn-cycle { min-width: 80px; }
-  .filter-btn.active { color:var(--cyan); }
-  .filter-btn:hover { color:var(--text); }
-
-  /* Circular icon buttons (theme toggle, gear, heatmap) */
-  #btn-theme, #data-menu-btn, #btn-heatmap {
+  /* ── FLOATING TOP-RIGHT FABS (settings, camera) ── */
+  #data-menu-btn, #toolbar-photo-btn {
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top, 0px)); z-index: 999;
     background: var(--surface); border: 1px solid var(--border); color: var(--text);
-    width: 30px; height: 30px; border-radius: 50%;
+    width: 46px; height: 46px; border-radius: 50%;
     cursor: pointer; transition: all .2s;
     display: flex; align-items: center; justify-content: center;
-    padding: 0; flex-shrink: 0;
+    padding: 0; font-size: 18px;
+    box-shadow: 0 0 12px rgba(0,0,0,.3);
   }
-  #btn-theme { font-size: 14px; }
-  #data-menu-btn { font-size: 16px; }
-  #btn-heatmap { font-size: 14px; }
-  #btn-theme:hover, #data-menu-btn:hover { border-color: var(--cyan); }
-  #btn-heatmap:hover { border-color: var(--red); }
-  #btn-heatmap.active { border-color: var(--red); background: rgba(255,45,85,.15); }
-
-  #toolbar-photo-btn {
-    background: var(--red); border: 1px solid var(--red); color: #fff;
-    width: 30px; height: 30px; border-radius: 50%;
-    cursor: pointer; transition: background .4s, border-color .4s;
-    display: flex; align-items: center; justify-content: center;
-    padding: 0; flex-shrink: 0; font-size: 14px;
-  }
+  #data-menu-btn  { right: 16px; }
+  #toolbar-photo-btn { right: 74px; background: var(--red); border-color: var(--red); color: #fff; font-size: 20px; transition: background .4s, border-color .4s; }
+  #data-menu-btn:hover { border-color: var(--cyan); }
+  #toolbar-photo-btn:hover { opacity: .85; }
   #toolbar-photo-btn.ml-loading { background: var(--yellow); border-color: var(--yellow); color: #000; }
   #toolbar-photo-btn.ml-ready   { background: var(--green);  border-color: var(--green);  color: #000; }
   #toolbar-photo-btn.ml-error   { background: #000;          border-color: #444;          color: #888; }
 
-  .ml-auto { margin-left:auto; display:flex; gap:8px; }
-
-  /* ── MAIN LAYOUT ── */
-  .main { flex:1; display:flex; overflow:hidden; }
+  /* ── MAP ── */
 
   /* ── MAP ── */
   #map { flex:1; background:#080810; position:relative; }
@@ -543,6 +485,19 @@
   }
   #fab-nearest:hover { box-shadow: 0 0 30px rgba(255,214,10,.5); }
 
+  #fab-heatmap {
+    position: absolute;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 132px; z-index: 999;
+    background: var(--surface); border: 2px solid var(--red); color: var(--red);
+    font-size: 18px;
+    width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 0 20px rgba(255,45,85,.3); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; padding: 0;
+  }
+  #fab-heatmap:hover { box-shadow: 0 0 30px rgba(255,45,85,.5); }
+  #fab-heatmap.active { background: rgba(255,45,85,.15); box-shadow: 0 0 30px rgba(255,45,85,.6); }
+
   /* ── NEAREST MODAL ── */
   #nearest-modal {
     display:none; position:fixed; inset:0; z-index:9400;
@@ -603,14 +558,6 @@
 
   /* ── MOBILE: bottom sheet ── */
   @media (max-width: 640px) {
-    .controls {
-      padding: 6px 10px; overflow-x: auto;
-      flex-wrap: nowrap; scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    .controls::-webkit-scrollbar { display: none; }
-    .ml-auto { margin-left: auto; }
-
     .main { position: relative; }
     #map { width: 100%; height: 100%; }
 
@@ -636,7 +583,6 @@
 
   /* ── DESKTOP: right-side drawer ── */
   @media (min-width: 641px) {
-    .main { position: relative; }
     #map { width: 100%; height: 100%; }
 
     .sidebar {
@@ -674,7 +620,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-06-19b</div>
+    <div class="about-build" id="about-build-date">build 2026-06-19c</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -749,19 +695,8 @@
   <div class="stat-popup-row"><span>No coords</span><span id="stat-nocoords" style="color:#606080">–</span></div>
 </div>
 
-<div class="controls">
-  <div id="stat-remaining-btn" onclick="toggleStatPopup(event)" title="Tap for details">
-    <div class="stat-val" id="stat-remaining">–</div>
-  </div>
-  <div class="ml-auto">
-    <button id="btn-heatmap" onclick="toggleViewMode()" title="Toggle heatmap">🔥</button>
-    <button id="toolbar-photo-btn" onclick="takePhoto()" title="Take photo">📷</button>
-    <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
-    <button id="btn-theme" onclick="toggleTheme()" title="Toggle theme">🌙</button>
-    <input type="file" id="import-input" accept=".txt" style="display:none" onchange="importTXT(event)">
-    <input type="file" id="photo-input" accept="image/*" style="display:none">
-  </div>
-</div>
+<input type="file" id="import-input" accept=".txt" style="display:none" onchange="importTXT(event)">
+<input type="file" id="photo-input" accept="image/*" style="display:none">
 
 <div id="data-popup">
   <div style="padding:8px 10px">
@@ -780,11 +715,18 @@
   <input type="file" id="import-db-input" accept=".json" style="display:none" onchange="importDB(event)">
   <div class="data-menu-item data-menu-danger" onclick="if(confirm('Reset all flashed mosaics?')){clearVisited();closeDataMenu()}">⟳ Reset</div>
   <div style="height:1px;background:var(--border)"></div>
+  <div class="data-menu-item" id="theme-menu-item" onclick="toggleTheme();closeDataMenu()">🌙 Dark mode</div>
   <div class="data-menu-item" onclick="openAbout();closeDataMenu()">ℹ About</div>
 </div>
 
 <div class="main">
   <div id="map"></div>
+
+  <div id="stat-remaining-btn" onclick="toggleStatPopup(event)" title="Tap for details">
+    <div class="stat-val" id="stat-remaining">–</div>
+  </div>
+  <button id="toolbar-photo-btn" onclick="takePhoto()" title="Take photo">📷</button>
+  <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
 
   <div class="sidebar">
     <div class="sidebar-handle" onclick="toggleSheet()"></div>
@@ -793,6 +735,7 @@
   </div>
   <button id="fab-locate" onclick="toggleLocate()" title="My location">◎</button>
   <button id="fab-nearest" onclick="showNearestMosaic()" title="5 nearest unflashed">🎯</button>
+  <button id="fab-heatmap" onclick="toggleViewMode()" title="Toggle heatmap">🔥</button>
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
 
@@ -1257,7 +1200,7 @@ function _updateHeatMax() {
 
 function toggleViewMode() {
   _viewMode = _viewMode === 'cluster' ? 'heat' : 'cluster';
-  document.getElementById('btn-heatmap').classList.toggle('active', _viewMode === 'heat');
+  document.getElementById('fab-heatmap').classList.toggle('active', _viewMode === 'heat');
   renderMapMarkers();
 }
 
@@ -1779,7 +1722,7 @@ let isLight = localStorage.getItem('theme') === 'light';
 
 function applyTheme() {
   document.body.classList.toggle('light', isLight);
-  document.getElementById('btn-theme').textContent = isLight ? '🌙' : '☀️';
+  document.getElementById('theme-menu-item').textContent = isLight ? '🌙 Dark mode' : '☀️ Light mode';
   localStorage.setItem('theme', isLight ? 'light' : 'dark');
 
   if (window._tileLayer && leafletMap) {
