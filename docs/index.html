@@ -422,13 +422,14 @@
   body.light .leaflet-control-attribution a { color:#0070cc!important; }
   body.light .leaflet-control-scale-line { border-color:#999!important; color:#333!important; background:rgba(255,255,255,.8)!important; }
 
-  /* Center scale bar at bottom, above FABs */
-  .leaflet-bottom.leaflet-left {
+  /* Center scale bar at top, between counter and camera FABs */
+  .leaflet-top.leaflet-left {
     left: 0; right: 0;
     display: flex; justify-content: center; pointer-events: none;
-    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
   }
-  .leaflet-bottom.leaflet-left .leaflet-control { pointer-events: auto; }
+  .leaflet-top.leaflet-left .leaflet-control { pointer-events: auto; margin: 0; }
+  .leaflet-control-scale { line-height: 46px; }
 
   /* Map popup content */
   .popup-body { font-family:'Share Tech Mono',monospace; min-width:160px; padding:4px 0; }
@@ -1027,7 +1028,7 @@ function initMap() {
     maxNativeZoom: 19,
   });
   window._tileLayer.addTo(leafletMap);
-  L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(leafletMap);
+  L.control.scale({ imperial: false, position: 'topleft' }).addTo(leafletMap);
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius(zoom) {
