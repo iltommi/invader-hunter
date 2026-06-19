@@ -422,6 +422,14 @@
   body.light .leaflet-control-attribution a { color:#0070cc!important; }
   body.light .leaflet-control-scale-line { border-color:#999!important; color:#333!important; background:rgba(255,255,255,.8)!important; }
 
+  /* Center scale bar at bottom, above FABs */
+  .leaflet-bottom.leaflet-left {
+    left: 0; right: 0;
+    display: flex; justify-content: center; pointer-events: none;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  .leaflet-bottom.leaflet-left .leaflet-control { pointer-events: auto; }
+
   /* Map popup content */
   .popup-body { font-family:'Share Tech Mono',monospace; min-width:160px; padding:4px 0; }
   .popup-id { font-family:'Press Start 2P',monospace; font-size:8px; color:var(--yellow); margin-bottom:8px; }
@@ -1019,7 +1027,7 @@ function initMap() {
     maxNativeZoom: 19,
   });
   window._tileLayer.addTo(leafletMap);
-  L.control.scale({ imperial: false, position: 'topright' }).addTo(leafletMap);
+  L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(leafletMap);
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius(zoom) {
