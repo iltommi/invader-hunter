@@ -1277,6 +1277,7 @@ function buildPopup(p) {
     <div class="popup-actions">
       <button class="popup-action" data-flash title="${isV?'Flashed':'Flash it'}">${isV?'✅':'⚡'}</button>
       <a class="popup-action" href="https://www.google.com/search?q=${encodeURIComponent(p.id+' invader')}&tbm=isch" target="_blank" rel="noopener" title="Google Images">🔍</a>
+      <a class="popup-action" href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener" title="Open in Google Maps">🗺️</a>
     </div>`;
   div.querySelector('[data-flash]').addEventListener('click', () => {
     toggleVisited(p.id);
