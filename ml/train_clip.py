@@ -11,6 +11,13 @@ All three views of the same invader are pulled together; views from different
 invaders are pushed apart. This teaches the model to bridge raw photos and
 clean pixel art representations.
 
+Invaders with confirmed real photos (flashes/identity_labels.json, produced by
+label_flashes.py) get genuine multi-photo positive pairs — view A and view B
+are drawn independently from {reference photo, confirmed real photos} instead
+of both being augmentations of the single reference image. A fixed 1-in-5
+subset of confirmed photos (flash_split.is_eval) is held out and never used
+here — see eval_recognition.py to measure accuracy on those.
+
 Output: clip_finetuned.pt
 
 Run:
@@ -30,15 +37,36 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from transformers import CLIPModel, CLIPProcessor
 
-IMAGES_DIR       = Path('images')
-OUT_FILE         = Path('clip_finetuned.pt')
-SNAP_LABELS_FILE = Path('snap_labels.json')
+from flash_split import is_eval
+
+IMAGES_DIR            = Path('images')
+OUT_FILE              = Path('clip_finetuned.pt')
+SNAP_LABELS_FILE      = Path('snap_labels.json')
+IDENTITY_LABELS_FILE  = Path('flashes/identity_labels.json')
+FLASH_IMAGES_DIR      = Path('flashes/images')
 
 def load_snap_labels():
     try:
         return json.loads(SNAP_LABELS_FILE.read_text())
     except Exception:
         return {}
+
+def load_confirmed_photos():
+    """poi_id -> list of confirmed real flash photo paths (extra positive views)."""
+    try:
+        labels = json.loads(IDENTITY_LABELS_FILE.read_text())
+    except Exception:
+        return {}
+    photos = {}
+    for flash_id, label in labels.items():
+        if label.get('verdict') != 'confirmed' or not label.get('poi_id'):
+            continue
+        if is_eval(flash_id):
+            continue
+        path = FLASH_IMAGES_DIR / f'{flash_id}.jpg'
+        if path.exists():
+            photos.setdefault(label['poi_id'], []).append(path)
+    return photos
 BATCH_SIZE  = 48          # reduced from 64 — 3 forward passes need more memory
 EPOCHS      = 10
 LR          = 1e-5
@@ -165,12 +193,26 @@ def grid_snap_pil(img, force_T=None):
     return Image.fromarray(out.clip(0, 255).astype(np.uint8)), confidence, T
 
 # ── Augmentation ──────────────────────────────────────────────────────────────
+# Rotation/crop/resize only -- no flips. A mirrored invader is a visually
+# different sprite, not the same one under a nuisance transform, so flipping
+# would teach the model to (wrongly) conflate distinct designs.
+
+def color_temperature_shift(img, strength):
+    """strength in [-1, 1]: negative = cooler/bluer, positive = warmer/oranger --
+    simulates sodium-vapor vs LED streetlight color casts on night flash photos."""
+    r, g, b = img.split()
+    r_factor = 1 + 0.3 * strength
+    b_factor = 1 - 0.3 * strength
+    r = r.point(lambda x: max(0, min(255, int(x * r_factor))))
+    b = b.point(lambda x: max(0, min(255, int(x * b_factor))))
+    return Image.merge('RGB', (r, g, b))
 
 def augment(img):
     img = img.rotate(random.uniform(-20, 20), expand=False, fillcolor=(128, 128, 128))
     img = ImageEnhance.Brightness(img).enhance(random.uniform(0.5, 1.5))
     img = ImageEnhance.Contrast(img).enhance(random.uniform(0.6, 1.4))
     img = ImageEnhance.Color(img).enhance(random.uniform(0.7, 1.3))
+    img = color_temperature_shift(img, random.uniform(-1, 1))
     if random.random() < 0.5:
         img = img.filter(ImageFilter.GaussianBlur(radius=random.uniform(0, 2.0)))
     w, h   = img.size
@@ -221,25 +263,32 @@ def synth_subpixel(img, force_T=None):
 # ── Dataset ───────────────────────────────────────────────────────────────────
 
 class InvaderDataset(Dataset):
-    def __init__(self, paths, processor, snap_labels):
-        self.paths       = paths
-        self.processor   = processor
-        self.snap_labels = snap_labels
+    def __init__(self, paths, processor, snap_labels, confirmed_photos):
+        self.paths            = paths
+        self.processor        = processor
+        self.snap_labels      = snap_labels
+        self.confirmed_photos = confirmed_photos
 
     def __len__(self):
         return len(self.paths)
 
+    def _open(self, path):
+        try:
+            return Image.open(path).convert('RGB')
+        except Exception:
+            return Image.new('RGB', (224, 224))
+
     def __getitem__(self, idx):
         path = self.paths[idx]
-        try:
-            img = Image.open(path).convert('RGB')
-        except Exception:
-            img = Image.new('RGB', (224, 224))
+        img  = self._open(path)
 
         pv = lambda view: self.processor(images=view, return_tensors='pt')['pixel_values'][0]
 
-        view_a = pv(augment(img))
-        view_b = pv(augment(img))
+        extra   = self.confirmed_photos.get(path.stem, [])
+        sources = [img] + [self._open(p) for p in extra]
+
+        view_a = pv(augment(random.choice(sources)))
+        view_b = pv(augment(random.choice(sources)))
 
         label   = self.snap_labels.get(path.stem, {})
         verdict = label.get('verdict', '')
@@ -288,13 +337,22 @@ for layer in list(model.vision_model.encoder.layers)[:-4]:
 trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print(f'Trainable: {trainable:,} params')
 
-paths       = sorted(IMAGES_DIR.rglob('*.png'))
-snap_labels = load_snap_labels()
+paths            = sorted(IMAGES_DIR.rglob('*.png'))
+snap_labels      = load_snap_labels()
+confirmed_photos = load_confirmed_photos()
 print(f'Snap labels: {len(snap_labels)} entries  '
       f'({sum(1 for v in snap_labels.values() if v.get("verdict")=="good")} good, '
       f'{sum(1 for v in snap_labels.values() if v.get("verdict")=="bad")} bad)')
+try:
+    all_labels = json.loads(IDENTITY_LABELS_FILE.read_text())
+except Exception:
+    all_labels = {}
+n_held_out = sum(1 for fid, l in all_labels.items()
+                  if l.get('verdict') == 'confirmed' and l.get('poi_id') and is_eval(fid))
+print(f'Confirmed real photos: {sum(len(v) for v in confirmed_photos.values())} '
+      f'across {len(confirmed_photos)} invaders  ({n_held_out} held out for eval)')
 loader = DataLoader(
-    InvaderDataset(paths, processor, snap_labels),
+    InvaderDataset(paths, processor, snap_labels, confirmed_photos),
     batch_size=BATCH_SIZE, shuffle=True, num_workers=0,
 )
 

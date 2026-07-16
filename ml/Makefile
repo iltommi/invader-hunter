@@ -5,7 +5,7 @@ WEIGHTS  = clip_finetuned.pt
 EMB_NPZ  = embeddings_clip.npz
 WEB_BIN  = ../docs/embeddings.bin
 
-.PHONY: all train extract export download label clean
+.PHONY: all train extract export download label download-flashes label-flashes clean
 
 # Full pipeline: train → extract → export
 all: export
@@ -15,6 +15,12 @@ download:
 
 label:
 	$(PYTHON) label_snaps.py
+
+download-flashes:
+	$(PYTHON) download_flashes.py
+
+label-flashes:
+	$(PYTHON) label_flashes.py
 
 $(WEIGHTS): $(IMAGES) $(LABELS)
 	$(PYTHON) train_clip.py

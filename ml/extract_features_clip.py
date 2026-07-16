@@ -156,11 +156,24 @@ def grid_snap_pil(img, force_T=None):
     return Image.fromarray(out.clip(0, 255).astype(np.uint8)), confidence
 
 # ── Augmentation ──────────────────────────────────────────────────────────────
+# Rotation/crop/resize only -- no flips (a mirrored invader is a different
+# sprite, not a nuisance-transformed view of the same one).
+
+def color_temperature_shift(img, strength):
+    """strength in [-1, 1]: negative = cooler/bluer, positive = warmer/oranger --
+    simulates sodium-vapor vs LED streetlight color casts on night flash photos."""
+    r, g, b = img.split()
+    r_factor = 1 + 0.3 * strength
+    b_factor = 1 - 0.3 * strength
+    r = r.point(lambda x: max(0, min(255, int(x * r_factor))))
+    b = b.point(lambda x: max(0, min(255, int(x * b_factor))))
+    return Image.merge('RGB', (r, g, b))
 
 def augment(img):
     img = img.rotate(random.uniform(-15, 15), expand=False, fillcolor=(128, 128, 128))
     img = ImageEnhance.Brightness(img).enhance(random.uniform(0.6, 1.4))
     img = ImageEnhance.Contrast(img).enhance(random.uniform(0.7, 1.3))
+    img = color_temperature_shift(img, random.uniform(-1, 1))
     if random.random() < 0.5:
         img = img.filter(ImageFilter.GaussianBlur(radius=random.uniform(0, 1.5)))
     w, h = img.size

@@ -9,6 +9,7 @@ __pycache__/
 
 # ML large blobs — regenerate with download_images.py + train_clip.py
 ml/images/
+ml/flashes/
 ml/clip_finetuned.pt
 ml/download.log
 ml/test.jpg
@@ -17,3 +18,9 @@ ml/.DS_Store
 # ML derived outputs — regenerate with extract_features_clip.py
 ml/embeddings.npz
 ml/embeddings_clip.npz
+
+# auto_retrain.py backups/local state
+ml/*.bak
+ml/retrain_state.json
+ml/eval_history.log
+ml/eval_latest.json
