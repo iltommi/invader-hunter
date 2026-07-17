@@ -266,6 +266,7 @@
   }
   #ml-results .ml-thumb {
     flex-shrink:0; cursor:pointer; text-align:center; transition:opacity .15s;
+    position:relative;
   }
   #ml-results .ml-thumb:hover { opacity:.75; }
   #ml-results .ml-thumb img {
@@ -275,6 +276,13 @@
   #ml-results .ml-thumb-label {
     font-size:9px; color:var(--cyan); margin-top:3px; line-height:1.4;
   }
+  #ml-results .ml-thumb-orig {
+    position:absolute; top:2px; right:2px; width:18px; height:18px;
+    background:rgba(0,0,0,.6); border-radius:2px; color:var(--cyan);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; text-decoration:none; line-height:1;
+  }
+  #ml-results .ml-thumb-orig:hover { background:rgba(0,0,0,.9); }
   #ml-results .ml-snap-item img { border-color:var(--green); }
   #ml-results .ml-snap-item .ml-thumb-label { color:var(--green); }
 
@@ -641,7 +649,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-07-16</div>
+    <div class="about-build" id="about-build-date">build 2026-07-17</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -1952,6 +1960,7 @@ let _mlLoadStart = false;
 let _thumbBin    = null;   // Uint8Array — packed JPEG data
 let _thumbIdx    = null;   // Uint32Array — [offset, length] pairs, one per embedding
 let _thumbUrls   = [];     // blob URLs created for the current result, revoked on next search
+let _cityPadding = {};     // city code -> zero-pad width, for linking to the original photo
 
 function _getThumbUrl(embIdx) {
   if (!_thumbBin || !_thumbIdx) return null;
@@ -1961,6 +1970,15 @@ function _getThumbUrl(embIdx) {
   const url = URL.createObjectURL(new Blob([_thumbBin.subarray(offset, offset + length)], {type: 'image/jpeg'}));
   _thumbUrls.push(url);
   return url;
+}
+
+// Original close-up photo on invader-spotter.art -- deterministic (unlike
+// their dated /photos or /images galleries, whose filenames can't be
+// guessed without scraping each invader's page).
+function _grosplanUrl(poiId) {
+  const [code, num] = poiId.split('_');
+  const width = _cityPadding[code] || num.length;
+  return `https://www.invader-spotter.art/grosplan/${code}/${code}_${num.padStart(width, '0')}-grosplan.png`;
 }
 
 function _revokeThumbUrls() {
@@ -1992,16 +2010,17 @@ async function loadMLAssets() {
   setP(0);
   try {
     let done = 0;
-    const total = 6;
+    const total = 7;
     const step = () => setP(Math.round(++done / total * 85));  // up to 85%, last 15% for session init
 
-    const [part0, part1, embBuf, idsJson, thumbBuf, thumbIdxBuf] = await Promise.all([
+    const [part0, part1, embBuf, idsJson, thumbBuf, thumbIdxBuf, cityPaddingJson] = await Promise.all([
       fetch('model.part0').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
       fetch('model.part1').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
       fetch('embeddings.bin').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
       fetch('ids.json').then(r => r.json()).then(v => { step(); return v; }),
       fetch('thumbs.bin').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
       fetch('thumbs_idx.bin').then(r => r.arrayBuffer()).then(v => { step(); return v; }),
+      fetch('city_padding.json').then(r => r.json()).then(v => { step(); return v; }).catch(() => { step(); return {}; }),
     ]);
 
     const model = new Uint8Array(part0.byteLength + part1.byteLength);
@@ -2009,11 +2028,12 @@ async function loadMLAssets() {
     model.set(new Uint8Array(part1), part0.byteLength);
     _ortSession = await ort.InferenceSession.create(model.buffer);
     setP(100);
-    _embMatrix  = new Float32Array(embBuf);
-    _embIds     = idsJson;
-    _thumbBin   = new Uint8Array(thumbBuf);
-    _thumbIdx   = new Uint32Array(thumbIdxBuf);
-    _mlReady    = true;
+    _embMatrix   = new Float32Array(embBuf);
+    _embIds      = idsJson;
+    _thumbBin    = new Uint8Array(thumbBuf);
+    _thumbIdx    = new Uint32Array(thumbIdxBuf);
+    _cityPadding = cityPaddingJson || {};
+    _mlReady     = true;
     _mlSetStatus('AI ready', 'ready');
   } catch(e) {
     console.warn('ML assets not available:', e.message);
@@ -2243,6 +2263,8 @@ async function runMLSearch(canvas, top = 5) {
           : '';
         return `<div class="ml-thumb" onclick="mlFlashFromResult('${escId(pid)}')">` +
           imgTag +
+          `<a class="ml-thumb-orig" href="${_grosplanUrl(pid)}" target="_blank" rel="noopener" ` +
+          `title="View original photo on invader-spotter.art" onclick="event.stopPropagation()">↗</a>` +
           `<div class="ml-thumb-label">${pid}<br>${pct}%${dist}</div>` +
           `</div>`;
       }).join('') +

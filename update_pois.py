@@ -8,6 +8,25 @@ Steps:
   3. Query Overpass / OSM        →  fallback coordinates for anything missing
   4. Merge everything            →  world_invaders.json
 
+Step 4 also diffs the new result against the previous world_invaders.json
+(before overwriting it) and prints what changed: newly discovered invaders,
+POIs that gained coordinates that were previously missing, and any that lost
+them, each broken down by city. The very first run has nothing to diff
+against and just says so.
+
+It also copies the fresh world_invaders.json to docs/world_invaders.json --
+that's the copy the deployed PWA actually fetches (JSON_URL in index.html),
+and nothing else keeps it in sync. spotter_pois.json/city_names.json aren't
+copied there since the web app doesn't read them at all.
+
+world_invaders.json is served cache-first by docs/sw.js (same bucket as the
+ML model/embeddings), so whenever the synced copy's content actually changes,
+this also bumps the SW cache version and About build date -- the same deploy
+markers export_for_web.py bumps -- otherwise the update would silently never
+reach anyone with a warm cache, no matter how many times they reload. Skipped
+when nothing changed, so a routine run that finds nothing new doesn't
+needlessly bust everyone's cache.
+
 Usage:
   python3 update_pois.py              # full run (headless browser)
   python3 update_pois.py --show       # same but with visible browser
@@ -15,6 +34,7 @@ Usage:
 """
 
 import json, math, re, sys, time, urllib.parse, urllib.request
+from datetime import date
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -30,6 +50,9 @@ OVERPASS_Q   = '[out:json][timeout:120];\nnode["artist_name"="Invader"];\nout bo
 SPOTTER_FILE   = Path('spotter_pois.json')
 CITY_NAMES_FILE = Path('city_names.json')
 OUTPUT_FILE    = Path('world_invaders.json')
+DOCS_OUTPUT_FILE = Path('docs/world_invaders.json')  # what the deployed PWA actually reads
+SW_FILE        = Path('docs/sw.js')
+HTML_FILE      = Path('docs/index.html')
 
 CITY_WAIT  = 4   # seconds after envoi()
 PAGE_WAIT  = 3   # seconds after changepage()
@@ -80,6 +103,38 @@ def extract_osm_id(tags):
         if m:
             return m.group(0).upper()
     return None
+
+# ── deploy version markers ──────────────────────────────────────────────────
+# Mirrors export_for_web.py's bump -- kept as a separate copy rather than a
+# shared import since ml/ isn't set up as an importable package from here
+# (same reasoning as the grid-snap logic already duplicated across the ml/
+# scripts in this repo).
+
+def bump_sw_cache_version():
+    text = SW_FILE.read_text()
+    m = re.search(r"const CACHE\s*=\s*'invader-hunter-v(\d+)'", text)
+    if not m:
+        print(f'  warn: could not find CACHE version in {SW_FILE}, skipping bump')
+        return
+    old_v, new_v = int(m.group(1)), int(m.group(1)) + 1
+    SW_FILE.write_text(text.replace(f"invader-hunter-v{old_v}'", f"invader-hunter-v{new_v}'"))
+    print(f'  SW cache: v{old_v} → v{new_v}')
+
+def bump_about_build_date():
+    text = HTML_FILE.read_text()
+    m = re.search(r'(<div class="about-build" id="about-build-date">build )([^<]+)(</div>)', text)
+    if not m:
+        print(f'  warn: could not find about-build-date in {HTML_FILE}, skipping bump')
+        return
+    prefix, old_value, suffix = m.groups()
+    today = date.today().isoformat()
+    if old_value.startswith(today):
+        rest = old_value[len(today):]
+        new_value = today + (rest[:-1] + chr(ord(rest[-1]) + 1) if rest and rest[-1].isalpha() else 'b')
+    else:
+        new_value = today
+    HTML_FILE.write_text(text[:m.start()] + prefix + new_value + suffix + text[m.end():])
+    print(f'  About build: {old_value} → {new_value}')
 
 # ── step 1: scrape invader-spotter.art ───────────────────────────────────────
 
@@ -193,6 +248,14 @@ def fetch_pnote():
 
 def merge(spotter, pnote, osm, city_names):
     print('\n── Step 4: merging ──')
+
+    prev_by_id = {}
+    if OUTPUT_FILE.exists():
+        try:
+            prev_by_id = {p['id']: p for p in json.loads(OUTPUT_FILE.read_text())}
+        except Exception:
+            prev_by_id = {}
+
     result   = []
     no_coord = []
 
@@ -212,7 +275,16 @@ def merge(spotter, pnote, osm, city_names):
 
         result.append(entry)
 
-    OUTPUT_FILE.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+    data_json = json.dumps(result, indent=2, ensure_ascii=False)
+    OUTPUT_FILE.write_text(data_json)
+
+    # Also sync to docs/ -- that's the copy the deployed PWA actually reads
+    # (JSON_URL in index.html), and nothing else keeps it in sync otherwise.
+    if DOCS_OUTPUT_FILE.parent.exists():
+        DOCS_OUTPUT_FILE.write_text(data_json)
+        print(f'  → synced to {DOCS_OUTPUT_FILE} (served by the deployed PWA)')
+    else:
+        print(f'  warn: {DOCS_OUTPUT_FILE.parent} not found, skipping docs/ sync')
 
     # Report
     from collections import Counter
@@ -222,7 +294,39 @@ def merge(spotter, pnote, osm, city_names):
     print(f'  → {len(no_coord)} POIs without coordinates:')
     for city, count in sorted(missing_by_city.items(), key=lambda x: -x[1]):
         print(f'     {city:<10} {count}')
+
+    print_diff_since_last_run(result, prev_by_id)
     return result
+
+def _preview(ids, cap=20):
+    ids = sorted(ids)
+    shown = ', '.join(ids[:cap])
+    more  = f'  (+{len(ids) - cap} more)' if len(ids) > cap else ''
+    return f': {shown}{more}' if shown else ''
+
+def print_diff_since_last_run(result, prev_by_id):
+    if not prev_by_id:
+        print(f'\n  Δ no previous {OUTPUT_FILE} to compare against — this run establishes the baseline')
+        return
+
+    from collections import Counter
+
+    new_ids       = [p['id'] for p in result if p['id'] not in prev_by_id]
+    newly_located = [p['id'] for p in result if p.get('lat') is not None
+                      and p['id'] in prev_by_id and prev_by_id[p['id']].get('lat') is None]
+    newly_lost    = [p['id'] for p in result if p.get('lat') is None
+                      and p['id'] in prev_by_id and prev_by_id[p['id']].get('lat') is not None]
+
+    print(f'\n  Δ since last run:')
+    print(f'    {len(new_ids)} new invader(s) discovered{_preview(new_ids)}')
+    print(f'    {len(newly_located)} newly geolocated (had no coordinates before){_preview(newly_located)}')
+    if newly_lost:
+        print(f'    {len(newly_lost)} LOST coordinates (had them before, missing now){_preview(newly_lost)}')
+
+    if new_ids:
+        by_city = Counter(pid.split('_')[0] for pid in new_ids)
+        for city, count in sorted(by_city.items(), key=lambda x: -x[1]):
+            print(f'       {city:<10} +{count}')
 
 # ── main ─────────────────────────────────────────────────────────────────────
 

@@ -12,6 +12,11 @@ Outputs (in project root, next to index.html):
   embeddings.bin       — Float32Array [N × 512], row-major
   ids.json             — ["PA_1251", ...]
 
+Also bumps docs/sw.js's cache version and docs/index.html's About build date,
+so the deploy actually reaches users (docs/sw.js caches model/embeddings
+cache-first for offline use, so without this a new export silently never
+shows up for anyone with a warm cache, no matter how many times they reload).
+
 Run after training:
   python3 export_for_web.py
 """
@@ -122,6 +127,29 @@ emb  = data['embeddings'].astype(np.float32)
 
 emb.tofile(str(DOCS_DIR / 'embeddings.bin'))
 (DOCS_DIR / 'ids.json').write_text(json.dumps(ids))
+
+# ── Export city padding ────────────────────────────────────────────────────────
+# For linking to the original invader-spotter.art close-up photo:
+# https://www.invader-spotter.art/grosplan/{code}/{code}_{padded_num}-grosplan.png
+# The zero-padding width is per-city (the digit count of that city's highest
+# ID number) and isn't derivable from a single ID string alone -- e.g. PA_5
+# needs "PA_0005" since Paris goes up into 4 digits. Computed from the full
+# spotter_pois.json catalog (not just `ids`, the embeddings index subset --
+# that could under-count a city's max if it doesn't yet include that city's
+# highest-numbered invader, producing too little padding and a 404).
+
+print('Computing city padding lookup...')
+SPOTTER_FILE = ROOT_DIR / 'spotter_pois.json'
+city_padding = {}
+if SPOTTER_FILE.exists():
+    for p in json.loads(SPOTTER_FILE.read_text()):
+        code, num = p['id'].split('_', 1)
+        if num.isdigit():
+            city_padding[code] = max(city_padding.get(code, 0), len(num))
+    (DOCS_DIR / 'city_padding.json').write_text(json.dumps(city_padding))
+    print(f'  {len(city_padding)} cities → city_padding.json')
+else:
+    print(f'  warn: {SPOTTER_FILE} not found, skipping (view-original links will use unpadded IDs)')
 print(f'  {len(ids)} vectors → embeddings.bin ({emb.nbytes/1e6:.1f} MB) + ids.json')
 
 # ── Export thumbnails ─────────────────────────────────────────────────────────
@@ -167,5 +195,50 @@ thumb_bin = b''.join(blobs)
 thumb_idx = arr_mod.array('I', offsets_flat)
 (DOCS_DIR / 'thumbs_idx.bin').write_bytes(thumb_idx.tobytes())
 print(f'  {len(ids)} thumbnails → thumbs.bin ({len(thumb_bin)/1e6:.1f} MB) + thumbs_idx.bin')
+
+# ── Bump deploy version markers ────────────────────────────────────────────────
+# docs/sw.js caches model/embeddings/thumbnails cache-first (so the PWA works
+# offline), so without bumping this, users with a warm cache never see a new
+# export no matter how many times they reload. The About build date is a
+# separate, purely cosmetic marker with its own long-standing convention
+# (bare date for the day's first build, then a suffix letter b, c, ... for
+# same-day re-runs) -- bumped here too so it stays a reliable "did this
+# actually deploy" signal instead of silently going stale.
+
+import re
+from datetime import date
+
+SW_FILE   = ROOT_DIR / 'docs' / 'sw.js'
+HTML_FILE = ROOT_DIR / 'docs' / 'index.html'
+
+def bump_sw_cache_version():
+    text = SW_FILE.read_text()
+    m = re.search(r"const CACHE\s*=\s*'invader-hunter-v(\d+)'", text)
+    if not m:
+        print(f'  warn: could not find CACHE version in {SW_FILE}, skipping bump')
+        return
+    old_v, new_v = int(m.group(1)), int(m.group(1)) + 1
+    SW_FILE.write_text(text.replace(f"invader-hunter-v{old_v}'", f"invader-hunter-v{new_v}'"))
+    print(f'  SW cache: v{old_v} → v{new_v}')
+
+def bump_about_build_date():
+    text = HTML_FILE.read_text()
+    m = re.search(r'(<div class="about-build" id="about-build-date">build )([^<]+)(</div>)', text)
+    if not m:
+        print(f'  warn: could not find about-build-date in {HTML_FILE}, skipping bump')
+        return
+    prefix, old_value, suffix = m.groups()
+    today = date.today().isoformat()
+    if old_value.startswith(today):
+        rest = old_value[len(today):]
+        new_value = today + (rest[:-1] + chr(ord(rest[-1]) + 1) if rest and rest[-1].isalpha() else 'b')
+    else:
+        new_value = today
+    HTML_FILE.write_text(text[:m.start()] + prefix + new_value + suffix + text[m.end():])
+    print(f'  About build: {old_value} → {new_value}')
+
+print('Bumping deploy version markers...')
+bump_sw_cache_version()
+bump_about_build_date()
 
 print('Done.')
