@@ -1,4 +1,4 @@
-const CACHE       = 'invader-hunter-v10';
+const CACHE       = 'invader-hunter-v11';
 const SHARE_CACHE = 'invader-share-v1';
 
 const PRECACHE = [
