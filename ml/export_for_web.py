@@ -16,12 +16,17 @@ Also bumps docs/sw.js's cache version and docs/index.html's About build date,
 so the deploy actually reaches users (docs/sw.js caches model/embeddings
 cache-first for offline use, so without this a new export silently never
 shows up for anyone with a warm cache, no matter how many times they reload).
+Skipped if the working tree already has an uncommitted bump (e.g. you also
+ran update_pois.py first in this same session) -- one bump covers everything
+not yet pushed, so bumping again here would double-count.
 
 Run after training:
   python3 export_for_web.py
 """
 
 import json
+import re
+import subprocess
 import numpy as np
 from pathlib import Path
 import torch
@@ -204,12 +209,36 @@ print(f'  {len(ids)} thumbnails → thumbs.bin ({len(thumb_bin)/1e6:.1f} MB) + t
 # (bare date for the day's first build, then a suffix letter b, c, ... for
 # same-day re-runs) -- bumped here too so it stays a reliable "did this
 # actually deploy" signal instead of silently going stale.
+#
+# Both are skipped if the working tree is already ahead of the last commit
+# (update_pois.py may have already bumped them in this same session) -- one
+# bump covers everything not yet pushed, so bumping again would double-count.
 
-import re
 from datetime import date
 
 SW_FILE   = ROOT_DIR / 'docs' / 'sw.js'
 HTML_FILE = ROOT_DIR / 'docs' / 'index.html'
+
+def _committed_sw_version():
+    """CACHE version number from the last commit, or None if it can't be
+    determined (no git, no prior commit, etc.)."""
+    try:
+        text = subprocess.run(
+            ['git', 'show', 'HEAD:docs/sw.js'],
+            capture_output=True, text=True, check=True, cwd=str(ROOT_DIR),
+        ).stdout
+    except Exception:
+        return None
+    m = re.search(r'invader-hunter-v(\d+)', text)
+    return int(m.group(1)) if m else None
+
+def _sw_already_bumped():
+    committed = _committed_sw_version()
+    if committed is None:
+        return False  # can't tell -- default to allowing the bump
+    m = re.search(r'invader-hunter-v(\d+)', SW_FILE.read_text())
+    current = int(m.group(1)) if m else None
+    return current is not None and current != committed
 
 def bump_sw_cache_version():
     text = SW_FILE.read_text()
@@ -238,7 +267,10 @@ def bump_about_build_date():
     print(f'  About build: {old_value} → {new_value}')
 
 print('Bumping deploy version markers...')
-bump_sw_cache_version()
-bump_about_build_date()
+if _sw_already_bumped():
+    print('  (SW cache already bumped since last commit -- one bump covers this too, skipping)')
+else:
+    bump_sw_cache_version()
+    bump_about_build_date()
 
 print('Done.')
