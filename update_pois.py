@@ -33,7 +33,7 @@ Usage:
   python3 update_pois.py --skip-scrape  # skip step 1, reuse existing spotter_pois.json
 """
 
-import json, math, re, sys, time, urllib.parse, urllib.request
+import json, math, re, subprocess, sys, time, urllib.parse, urllib.request
 from datetime import date
 from pathlib import Path
 from selenium import webdriver
@@ -109,6 +109,31 @@ def extract_osm_id(tags):
 # shared import since ml/ isn't set up as an importable package from here
 # (same reasoning as the grid-snap logic already duplicated across the ml/
 # scripts in this repo).
+
+def _committed_sw_version():
+    """CACHE version number from the last commit, or None if it can't be
+    determined (no git, no prior commit, etc.)."""
+    try:
+        text = subprocess.run(
+            ['git', 'show', 'HEAD:docs/sw.js'],
+            capture_output=True, text=True, check=True,
+        ).stdout
+    except Exception:
+        return None
+    m = re.search(r'invader-hunter-v(\d+)', text)
+    return int(m.group(1)) if m else None
+
+def _sw_already_bumped():
+    """True if the working-tree SW cache version is already ahead of the
+    last commit -- e.g. export_for_web.py already bumped it earlier in this
+    same session -- so bumping again here would double-count: one bump
+    covers everything not yet pushed."""
+    committed = _committed_sw_version()
+    if committed is None:
+        return False  # can't tell -- default to allowing the bump
+    m = re.search(r'invader-hunter-v(\d+)', SW_FILE.read_text())
+    current = int(m.group(1)) if m else None
+    return current is not None and current != committed
 
 def bump_sw_cache_version():
     text = SW_FILE.read_text()
@@ -281,8 +306,19 @@ def merge(spotter, pnote, osm, city_names):
     # Also sync to docs/ -- that's the copy the deployed PWA actually reads
     # (JSON_URL in index.html), and nothing else keeps it in sync otherwise.
     if DOCS_OUTPUT_FILE.parent.exists():
+        changed = not DOCS_OUTPUT_FILE.exists() or DOCS_OUTPUT_FILE.read_text() != data_json
         DOCS_OUTPUT_FILE.write_text(data_json)
         print(f'  → synced to {DOCS_OUTPUT_FILE} (served by the deployed PWA)')
+        if not changed:
+            print('  (content unchanged, skipping deploy version bump)')
+        elif _sw_already_bumped():
+            print('  (SW cache already bumped since last commit -- one bump covers this too, skipping)')
+        else:
+            # world_invaders.json is cache-first in docs/sw.js (same as the
+            # model/embeddings), so bump the version or this update
+            # silently never reaches anyone with a warm cache.
+            bump_sw_cache_version()
+            bump_about_build_date()
     else:
         print(f'  warn: {DOCS_OUTPUT_FILE.parent} not found, skipping docs/ sync')
 
