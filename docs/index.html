@@ -139,6 +139,8 @@
 
   /* ── MAP ── */
   #map { flex:1; background:#080810; position:relative; }
+  /* Prevent iOS "save image" callout from interrupting a long-press pin drop */
+  .leaflet-tile-pane, .leaflet-marker-pane, .leaflet-overlay-pane { -webkit-touch-callout:none; }
 
   /* Override Leaflet styles for dark theme */
   .leaflet-container { background:#080810; font-family:'Share Tech Mono',monospace; }
@@ -343,6 +345,47 @@
     border:1px solid #444; border-radius:2px; cursor:pointer;
     align-self:center; margin-top:4px;
   }
+  /* ── GALLERY MODAL (flashed invaders thumbs) ── */
+  #gallery-modal {
+    display:none; position:fixed; inset:0; z-index:9250;
+    background:var(--bg);
+    flex-direction:column;
+  }
+  #gallery-modal.open { display:flex; }
+  #gallery-header {
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; flex-shrink:0;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px;
+    border-bottom:1px solid var(--border);
+  }
+  #gallery-title {
+    font-family:'Press Start 2P',monospace; font-size:10px; color:var(--green);
+  }
+  #gallery-close {
+    font-family:'Press Start 2P',monospace; font-size:10px;
+    width:32px; height:32px; border-radius:2px; cursor:pointer;
+    background:transparent; color:#888; border:1px solid #444; flex-shrink:0;
+  }
+  #gallery-grid {
+    flex:1; overflow-y:auto; padding:14px;
+    padding-bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px;
+    align-content:start;
+  }
+  .gallery-item { text-align:center; text-decoration:none; display:block; }
+  .gallery-item img {
+    width:100%; aspect-ratio:1; object-fit:cover;
+    border-radius:2px; border:2px solid var(--green); display:block;
+  }
+  .gallery-item-label {
+    font-size:9px; color:var(--green); margin-top:4px;
+    word-break:break-all; line-height:1.4;
+  }
+  .gallery-empty {
+    grid-column:1/-1; text-align:center; color:#606080;
+    font-size:12px; padding:60px 20px;
+  }
+
   #coords-modal {
     display:none; position:fixed; inset:0; z-index:9200;
     background:rgba(0,0,0,.85);
@@ -475,6 +518,13 @@
     transition:opacity .15s; text-decoration:none;
   }
   .popup-action:hover { opacity:.6; }
+  .popup-body input[type=text] {
+    width:100%; background:var(--bg); border:1px solid var(--border);
+    color:var(--text); height:30px; padding:0 8px; margin:2px 0 0;
+    font-family:'Share Tech Mono',monospace; font-size:12px;
+    border-radius:2px; outline:none; box-sizing:border-box;
+  }
+  .popup-body input[type=text]:focus { border-color:var(--cyan); }
 
   /* ── LOCATION ── */
   #fab-locate {
@@ -646,6 +696,14 @@
   </div>
 </div>
 
+<div id="gallery-modal">
+  <div id="gallery-header">
+    <span id="gallery-title">🖼 FLASHED</span>
+    <button id="gallery-close" onclick="closeGallery()">✕</button>
+  </div>
+  <div id="gallery-grid"></div>
+</div>
+
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
@@ -737,6 +795,8 @@
   <div class="data-menu-item filter-menu-item" data-key="destroyed" onclick="setFilter('destroyed')">💀 Destroyed</div>
   <div class="data-menu-item filter-menu-item" data-key="all"       onclick="setFilter('all')">👾 All</div>
   <div style="height:1px;background:var(--border)"></div>
+  <div class="data-menu-item" onclick="openGallery();closeDataMenu()">🖼 Flashed Photos</div>
+  <div style="height:1px;background:var(--border)"></div>
   <div class="data-menu-item" id="share-txt-item" onclick="shareTXT();closeDataMenu()">⤴ Share</div>
   <div class="data-menu-item" onclick="document.getElementById('import-input').click();closeDataMenu()">⬆ Import</div>
   <div class="data-menu-item" id="share-db-item" onclick="shareDB();closeDataMenu()">⤴ Share DB</div>
@@ -796,6 +856,8 @@ let listTab = 'map';   // 'map' = POIs with coords in view, 'nolocation' = POIs 
 let leafletMap = null;
 let clusterGroup = null;
 let markerMap = {};   // id → L.CircleMarker
+let customPinLayer = null;
+let customPinMarkers = {};   // pin id → L.CircleMarker
 
 // ─────────────────────────────────────────────────────────────
 // VISITED PERSISTENCE
@@ -834,6 +896,27 @@ function toggleVisited(id) {
 }
 
 function clearVisited() { localStorage.removeItem(STORAGE_KEY); refreshAll(); }
+
+// ─────────────────────────────────────────────────────────────
+// GALLERY (flashed invaders thumbs)
+// ─────────────────────────────────────────────────────────────
+function openGallery() {
+  const visited = getVisited();
+  const ids = Object.keys(visited).sort((a, b) => visited[b] - visited[a]);
+  document.getElementById('gallery-title').textContent = `🖼 FLASHED (${ids.length})`;
+  document.getElementById('gallery-grid').innerHTML = ids.length
+    ? ids.map(id => `
+      <a class="gallery-item" href="${spotterUrl(id)}" target="_blank" rel="noopener">
+        <img src="${spotterUrl(id)}" alt="${id}" loading="lazy" onerror="this.style.opacity='.15'">
+        <div class="gallery-item-label">${id}</div>
+      </a>`).join('')
+    : `<div class="gallery-empty">Nothing flashed yet — go hunt! 👾</div>`;
+  document.getElementById('gallery-modal').classList.add('open');
+}
+
+function closeGallery() {
+  document.getElementById('gallery-modal').classList.remove('open');
+}
 
 
 async function shareTXT() {
@@ -1091,6 +1174,10 @@ function initMap() {
     const c = leafletMap.getCenter();
     localStorage.setItem('invader_map_view_v1', JSON.stringify({ lat: c.lat, lng: c.lng, zoom: leafletMap.getZoom() }));
   });
+
+  customPinLayer = L.layerGroup().addTo(leafletMap);
+  renderCustomPins();
+  setupLongPress(leafletMap);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1311,6 +1398,136 @@ function buildPopup(p) {
     btn.title = isNowV ? 'Flashed' : 'Flash it';
   });
   return div;
+}
+
+// ─────────────────────────────────────────────────────────────
+// CUSTOM PINS (long-press a spot to remember it — "come back here")
+// ─────────────────────────────────────────────────────────────
+const CUSTOM_PINS_KEY = 'invader_custom_pins_v1';
+
+function getCustomPins() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_PINS_KEY) || '[]'); } catch { return []; }
+}
+function saveCustomPins(pins) { localStorage.setItem(CUSTOM_PINS_KEY, JSON.stringify(pins)); }
+
+function addCustomPin(lat, lng) {
+  const pins = getCustomPins();
+  const pin = { id: 'pin_' + Date.now(), lat, lng, label: '' };
+  pins.push(pin);
+  saveCustomPins(pins);
+  renderCustomPins();
+  return pin;
+}
+
+function updateCustomPinLabel(id, label) {
+  const pins = getCustomPins();
+  const pin = pins.find(x => x.id === id);
+  if (!pin) return;
+  pin.label = label;
+  saveCustomPins(pins);
+}
+
+function deleteCustomPin(id) {
+  saveCustomPins(getCustomPins().filter(x => x.id !== id));
+  renderCustomPins();
+}
+
+function buildCustomPinPopup(pin) {
+  const div = document.createElement('div');
+  div.className = 'popup-body';
+  div.innerHTML = `
+    <div class="popup-id" style="color:#2979ff">📌 Come back here</div>
+    <input type="text" class="pin-label-input" placeholder="Note (optional)…">
+    <div class="popup-actions">
+      <button class="popup-action" data-save title="Save note">💾</button>
+      <a class="popup-action" href="https://www.google.com/maps?q=${pin.lat},${pin.lng}" target="_blank" rel="noopener" title="Open in Google Maps">🗺️</a>
+      <button class="popup-action" data-del title="Delete pin">🗑</button>
+    </div>`;
+  const input = div.querySelector('.pin-label-input');
+  input.value = pin.label || '';
+  const save = () => {
+    pin.label = input.value.trim();
+    updateCustomPinLabel(pin.id, pin.label);
+    showToast('📌 Saved');
+  };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  div.querySelector('[data-save]').addEventListener('click', save);
+  div.querySelector('[data-del]').addEventListener('click', () => {
+    if (!confirm('Remove this pin?')) return;
+    deleteCustomPin(pin.id);
+    leafletMap.closePopup();
+  });
+  return div;
+}
+
+function renderCustomPins() {
+  if (!customPinLayer) return;
+  customPinLayer.clearLayers();
+  customPinMarkers = {};
+  getCustomPins().forEach(pin => {
+    const m = L.circleMarker([pin.lat, pin.lng], {
+      radius: 9,
+      fillColor: '#2979ff',
+      fillOpacity: 0.9,
+      color: '#0d3d8f',
+      weight: 2,
+    });
+    m.bindPopup(() => buildCustomPinPopup(pin), { maxWidth: 220 });
+    customPinLayer.addLayer(m);
+    customPinMarkers[pin.id] = m;
+  });
+}
+
+// Manual long-press detection: Leaflet's synthetic mouse events only fire
+// *after* touchend, so they can't distinguish a hold from a tap — hence
+// listening to raw touch/mouse events directly on the map container.
+function setupLongPress(map) {
+  const container = map.getContainer();
+  const HOLD_MS = 550, MOVE_TOLERANCE = 12;
+  let timer = null, startPt = null;
+
+  const isOnOverlay = target => !!target.closest('.leaflet-popup, .leaflet-control, .leaflet-marker-icon');
+  const clearTimer = () => { if (timer) { clearTimeout(timer); timer = null; } };
+
+  function start(clientX, clientY) {
+    clearTimer();
+    startPt = { x: clientX, y: clientY };
+    timer = setTimeout(() => {
+      timer = null;
+      const latlng = map.containerPointToLatLng(map.mouseEventToContainerPoint({ clientX, clientY }));
+      if (navigator.vibrate) navigator.vibrate(30);
+      const pin = addCustomPin(latlng.lat, latlng.lng);
+      const marker = customPinMarkers[pin.id];
+      if (marker) marker.openPopup();
+      showToast('📌 Pin dropped');
+    }, HOLD_MS);
+  }
+  function move(clientX, clientY) {
+    if (!startPt) return;
+    if (Math.hypot(clientX - startPt.x, clientY - startPt.y) > MOVE_TOLERANCE) clearTimer();
+  }
+  function end() { clearTimer(); startPt = null; }
+
+  container.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || isOnOverlay(e.target)) { clearTimer(); return; }
+    start(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  container.addEventListener('touchmove', e => {
+    if (e.touches.length !== 1) { clearTimer(); return; }
+    move(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  container.addEventListener('touchend', end);
+  container.addEventListener('touchcancel', end);
+
+  container.addEventListener('mousedown', e => {
+    if (e.button !== 0 || isOnOverlay(e.target)) return;
+    start(e.clientX, e.clientY);
+  });
+  container.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+  container.addEventListener('mouseup', end);
+  container.addEventListener('mouseleave', end);
+
+  container.addEventListener('contextmenu', e => e.preventDefault());
 }
 
 // ─────────────────────────────────────────────────────────────
