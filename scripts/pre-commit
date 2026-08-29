@@ -11,7 +11,11 @@ if not target.exists():
 
 txt = target.read_text()
 ts  = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-new, n = re.subn(r'(__BUILD__|\d{4}-\d{2}-\d{2} \d{2}:\d{2})', ts, txt)
+new, n = re.subn(
+    r'(<div class="about-build" id="about-build-date">build ).*?(</div>)',
+    lambda m: f'{m.group(1)}{ts}{m.group(2)}',
+    txt,
+)
 
 if n:
     target.write_text(new)
