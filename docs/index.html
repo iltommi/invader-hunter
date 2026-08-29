@@ -708,7 +708,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-08-29 17:02</div>
+    <div class="about-build" id="about-build-date">build 2026-08-29 17:11</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -827,7 +827,7 @@
     </div>
     <div class="poi-list" id="poi-list"></div>
   </div>
-  <button id="fab-locate" onclick="toggleLocate()" title="My location">◎</button>
+  <button id="fab-locate" onclick="centerOnMyLocation()" title="Center on my location">◎</button>
   <button id="fab-nearest" onclick="showNearestMosaic()" title="5 nearest unflashed">🎯</button>
   <button id="fab-heatmap" onclick="toggleViewMode()" title="Toggle heatmap">🔥</button>
   <button id="fab-list" onclick="toggleSheet()">≡</button>
@@ -2039,12 +2039,14 @@ let userPos    = null;   // {lat, lng} updated by watchPosition
 let _centerOnNextFix = false;
 let _locPermRetried = false;
 
-function toggleLocate() {
-  if (!isTracking) {
-    _centerOnNextFix = true;
-    startLocate();
+function centerOnMyLocation() {
+  if (userPos) {
+    leafletMap.panTo([userPos.lat, userPos.lng], { animate: true });
   } else {
-    stopLocate();
+    // No fix yet (denied earlier, or still waiting on the first one) —
+    // (re)start tracking and center as soon as a fix arrives.
+    _centerOnNextFix = true;
+    if (!isTracking) startLocate();
   }
 }
 
@@ -2104,7 +2106,7 @@ function onLocation(pos) {
 
   if (_centerOnNextFix) {
     _centerOnNextFix = false;
-    leafletMap.setView(latlng, Math.max(leafletMap.getZoom(), 16), { animate: true });
+    leafletMap.panTo(latlng, { animate: true });
   }
 }
 
