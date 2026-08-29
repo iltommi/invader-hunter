@@ -2036,6 +2036,7 @@ let locWatchId = null;
 let isTracking = false;
 let userPos    = null;   // {lat, lng} updated by watchPosition
 let _centerOnNextFix = false;
+let _locPermRetried = false;
 
 function toggleLocate() {
   if (!isTracking) {
@@ -2052,6 +2053,7 @@ function startLocate() {
     return;
   }
   isTracking = true;
+  _locPermRetried = false;
   document.getElementById('fab-locate').classList.add('tracking');
   document.getElementById('fab-locate').textContent = '◉';
 
@@ -2106,6 +2108,20 @@ function onLocation(pos) {
 }
 
 function onLocationError(err) {
+  if (err.code === 1 && !_locPermRetried) {
+    // Some browsers fire PERMISSION_DENIED once while the native prompt
+    // is still resolving (or during GPS cold-start). Retrying is safe —
+    // the browser never shows a second prompt, so a real denial just
+    // fails silently again below.
+    _locPermRetried = true;
+    if (locWatchId !== null) navigator.geolocation.clearWatch(locWatchId);
+    locWatchId = navigator.geolocation.watchPosition(
+      onLocation,
+      onLocationError,
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+    return;
+  }
   const msgs = {
     1: '⚠ Location access denied',
     2: '⚠ Position unavailable',
