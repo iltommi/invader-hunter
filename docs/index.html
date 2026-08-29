@@ -841,6 +841,7 @@
 // CONFIG
 // ─────────────────────────────────────────────────────────────
 const JSON_URL = './world_invaders.json';
+const CARTO_KEY = 'cb1_2j3a_1_c495a69140097884b2d3f68e';
 const STORAGE_KEY = 'invader_visited_v1';
 const COORDS_KEY  = 'invader_coords_v1';
 
@@ -1128,8 +1129,8 @@ function initMap() {
   });
 
   window._tileLayer = L.tileLayer(isLight
-    ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    ? `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+    : `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`, {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 22,
@@ -2002,8 +2003,8 @@ function applyTheme() {
   if (window._tileLayer && leafletMap) {
     leafletMap.removeLayer(window._tileLayer);
     const url = isLight
-      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      ? `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+      : `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`;
     window._tileLayer = L.tileLayer(url, {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd', maxZoom: 22, maxNativeZoom: 19,
