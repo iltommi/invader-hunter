@@ -1050,7 +1050,7 @@
   {
     "id": "WN_11",
     "city": "Vienna",
-    "status": "ok",
+    "status": "damaged",
     "points": 30,
     "lat": 48.2128942519,
     "lng": 16.3686619981
@@ -1394,7 +1394,7 @@
   {
     "id": "WN_54",
     "city": "Vienna",
-    "status": "damaged",
+    "status": "destroyed",
     "points": 50,
     "lat": 48.2040496576,
     "lng": 16.3565639236
@@ -3210,7 +3210,7 @@
   {
     "id": "HK_54",
     "city": "Hong Kong",
-    "status": "damaged",
+    "status": "destroyed",
     "points": 50,
     "lat": 22.3195869231,
     "lng": 114.1718286062
@@ -7468,7 +7468,7 @@
   {
     "id": "NY_29",
     "city": "New York",
-    "status": "ok",
+    "status": "destroyed",
     "points": 20,
     "lat": 40.7149435746,
     "lng": -73.9773253668
@@ -9854,7 +9854,7 @@
   {
     "id": "BTA_27",
     "city": "Bastia",
-    "status": "damaged",
+    "status": "destroyed",
     "points": 10,
     "lat": 42.8175078446,
     "lng": 9.4866042499
@@ -10342,7 +10342,7 @@
   {
     "id": "BAB_54",
     "city": "Biarritz-Anglet-Bayonne",
-    "status": "damaged",
+    "status": "ok",
     "points": 40,
     "lat": 43.4325849928,
     "lng": -1.5991668752
@@ -11412,7 +11412,7 @@
   {
     "id": "FTBL_23",
     "city": "Fontainebleau",
-    "status": "damaged",
+    "status": "destroyed",
     "points": 30,
     "lat": 48.476466551,
     "lng": 2.6197429469
@@ -11492,7 +11492,7 @@
   {
     "id": "FTBL_33",
     "city": "Fontainebleau",
-    "status": "damaged",
+    "status": "destroyed",
     "points": 30,
     "lat": 48.3525700503,
     "lng": 2.5685910272
@@ -16468,7 +16468,7 @@
   {
     "id": "PA_296",
     "city": "Paris",
-    "status": "ok",
+    "status": "damaged",
     "points": 10,
     "lat": 48.8649162892,
     "lng": 2.3447902684
@@ -17548,7 +17548,7 @@
   {
     "id": "PA_431",
     "city": "Paris",
-    "status": "ok",
+    "status": "damaged",
     "points": 10,
     "lat": 48.8472884738,
     "lng": 2.4142008803
@@ -18076,7 +18076,7 @@
   {
     "id": "PA_497",
     "city": "Paris",
-    "status": "ok",
+    "status": "destroyed",
     "points": 50,
     "lat": 49.0067372003,
     "lng": 2.528123547
@@ -18676,7 +18676,7 @@
   {
     "id": "PA_572",
     "city": "Paris",
-    "status": "destroyed",
+    "status": "ok",
     "points": 30,
     "lat": 48.8564043228,
     "lng": 2.3573594815
@@ -19564,7 +19564,7 @@
   {
     "id": "PA_683",
     "city": "Paris",
-    "status": "damaged",
+    "status": "destroyed",
     "points": 30,
     "lat": 48.8659184929,
     "lng": 2.3701102343
@@ -20980,7 +20980,7 @@
   {
     "id": "PA_860",
     "city": "Paris",
-    "status": "damaged",
+    "status": "ok",
     "points": 20,
     "lat": 48.8615204509,
     "lng": 2.3397777427
@@ -22892,7 +22892,7 @@
   {
     "id": "PA_1099",
     "city": "Paris",
-    "status": "destroyed",
+    "status": "ok",
     "points": 50,
     "lat": 48.8684572797,
     "lng": 2.3884468419
@@ -26653,15 +26653,17 @@
     "id": "PA_1569",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8655540062,
+    "lng": 2.3673537239
   },
   {
     "id": "PA_1570",
     "city": "Paris",
     "status": "ok",
     "points": 50,
-    "lat": 48.8581553,
-    "lng": 2.3526027
+    "lat": 48.8582079965,
+    "lng": 2.3526988303
   },
   {
     "id": "PA_1571",
@@ -26679,19 +26681,25 @@
     "id": "PA_1573",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8947178254,
+    "lng": 2.3893283095
   },
   {
     "id": "PA_1574",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8950027117,
+    "lng": 2.3889354824
   },
   {
     "id": "PA_1575",
     "city": "Paris",
     "status": "ok",
-    "points": 20
+    "points": 20,
+    "lat": 48.8944167798,
+    "lng": 2.3882242605
   },
   {
     "id": "PA_1576",
@@ -26781,25 +26789,33 @@
     "id": "PA_1590",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8918497012,
+    "lng": 2.3903417014
   },
   {
     "id": "PA_1591",
     "city": "Paris",
     "status": "ok",
-    "points": 50
+    "points": 50,
+    "lat": 48.894665713,
+    "lng": 2.3881770439
   },
   {
     "id": "PA_1592",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8891417218,
+    "lng": 2.3883161508
   },
   {
     "id": "PA_1593",
     "city": "Paris",
     "status": "ok",
-    "points": 30
+    "points": 30,
+    "lat": 48.8864805017,
+    "lng": 2.3939651507
   },
   {
     "id": "PA_1594",
@@ -27085,9 +27101,7 @@
     "id": "TLS_11",
     "city": "Toulouse",
     "status": "ok",
-    "points": 30,
-    "lat": 44.2600928326,
-    "lng": 1.5872587782
+    "points": 30
   },
   {
     "id": "VLMO_01",
@@ -28172,7 +28186,7 @@
   {
     "id": "LDN_91",
     "city": "London",
-    "status": "ok",
+    "status": "destroyed",
     "points": 20,
     "lat": 51.5147750256,
     "lng": -0.1370560683
@@ -30056,7 +30070,7 @@
   {
     "id": "ROM_06",
     "city": "Roma",
-    "status": "ok",
+    "status": "destroyed",
     "points": 50,
     "lat": 41.9183963734,
     "lng": 12.4789297679
@@ -30826,7 +30840,7 @@
   {
     "id": "TK_28",
     "city": "Tokyo",
-    "status": "unknown",
+    "status": "destroyed",
     "points": 20
   },
   {
@@ -31594,7 +31608,7 @@
   {
     "id": "TK_127",
     "city": "Tokyo",
-    "status": "ok",
+    "status": "damaged",
     "points": 30,
     "lat": 35.7024151662,
     "lng": 139.6654419064
@@ -32850,7 +32864,7 @@
   {
     "id": "LJU_19",
     "city": "Ljubljana",
-    "status": "damaged",
+    "status": "destroyed",
     "points": 10,
     "lat": 46.0573664243,
     "lng": 14.5168781979
@@ -33554,7 +33568,7 @@
   {
     "id": "GNV_02",
     "city": "Genève",
-    "status": "destroyed",
+    "status": "ok",
     "points": 10,
     "lat": 46.2041103798,
     "lng": 6.1376805585
@@ -33594,7 +33608,7 @@
   {
     "id": "GNV_07",
     "city": "Genève",
-    "status": "destroyed",
+    "status": "ok",
     "points": 10,
     "lat": 46.2042493758,
     "lng": 6.1421358649
@@ -33650,7 +33664,7 @@
   {
     "id": "GNV_14",
     "city": "Genève",
-    "status": "destroyed",
+    "status": "ok",
     "points": 10,
     "lat": 46.2055478613,
     "lng": 6.13980277
@@ -33658,7 +33672,7 @@
   {
     "id": "GNV_15",
     "city": "Genève",
-    "status": "destroyed",
+    "status": "ok",
     "points": 10,
     "lat": 46.2015991087,
     "lng": 6.1476282774
@@ -33722,7 +33736,7 @@
   {
     "id": "GNV_23",
     "city": "Genève",
-    "status": "ok",
+    "status": "damaged",
     "points": 10,
     "lat": 46.2063462056,
     "lng": 6.1404649558
@@ -33786,7 +33800,7 @@
   {
     "id": "GNV_31",
     "city": "Genève",
-    "status": "destroyed",
+    "status": "ok",
     "points": 30,
     "lat": 46.2047851787,
     "lng": 6.1435126844
@@ -33794,7 +33808,7 @@
   {
     "id": "GNV_32",
     "city": "Genève",
-    "status": "destroyed",
+    "status": "ok",
     "points": 30,
     "lat": 46.2046113409,
     "lng": 6.1400533236
@@ -33862,7 +33876,7 @@
   {
     "id": "LSN_08",
     "city": "Lausanne",
-    "status": "ok",
+    "status": "damaged",
     "points": 10,
     "lat": 46.5204606136,
     "lng": 6.6300038883
@@ -34074,7 +34088,7 @@
   {
     "id": "BGK_11",
     "city": "Bangkok",
-    "status": "ok",
+    "status": "destroyed",
     "points": 20,
     "lat": 13.7280598815,
     "lng": 100.5330549014
@@ -34186,7 +34200,7 @@
   {
     "id": "BGK_26",
     "city": "Bangkok",
-    "status": "ok",
+    "status": "destroyed",
     "points": 10,
     "lat": 13.725552027,
     "lng": 100.5263588095
