@@ -3,7 +3,7 @@
 import re, datetime, subprocess, sys
 from pathlib import Path
 
-repo = Path(__file__).resolve().parents[1]
+repo = Path(__file__).resolve().parents[2]
 target = repo / 'docs' / 'index.html'
 
 if not target.exists():
