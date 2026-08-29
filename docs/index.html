@@ -477,6 +477,7 @@
     white-space:nowrap; z-index:9999;
   }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #toast.clickable { pointer-events:auto; cursor:pointer; text-decoration:underline; }
 
   /* Leaflet attribution */
   .leaflet-control-attribution { background:rgba(10,10,15,.8)!important; color:#404060!important; }
@@ -2154,12 +2155,17 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─────────────────────────────────────────────────────────────
 // TOAST
 // ─────────────────────────────────────────────────────────────
-function showToast(msg, duration=2500) {
+function showToast(msg, duration=2500, onClick=null) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
+  t.classList.toggle('clickable', !!onClick);
+  t.onclick = onClick;
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), duration);
+  // Clickable toasts (e.g. "tap to reload") stay up until tapped —
+  // standalone PWAs have no browser chrome to fall back on, so this
+  // may be the user's only cue that an update is waiting.
+  if (!onClick) t._timer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -2170,12 +2176,21 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => {
         reg.update(); // force check for new SW on every load
+
+        // Installed (standalone) PWAs are usually resumed from a
+        // suspended state rather than reloaded, so `load` alone rarely
+        // fires again once installed — re-check whenever the app comes
+        // back to the foreground too.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update();
+        });
       })
       .catch(e => console.warn('SW failed:', e));
 
-    // When a new SW takes over, notify — don't hard-reload mid-session
+    // When a new SW takes over, prompt for reload — standalone mode has
+    // no browser chrome, so this toast is the only way to apply it.
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      showToast('✓ App updated — refresh to apply');
+      showToast('✓ App updated — tap to reload', 0, () => location.reload());
     });
   });
 }
