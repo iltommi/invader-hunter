@@ -1,4 +1,4 @@
-const CACHE       = 'invader-hunter-v11';
+const CACHE       = 'invader-hunter-v12';
 const SHARE_CACHE = 'invader-share-v1';
 
 const PRECACHE = [
@@ -58,8 +58,10 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // index.html: network-first, fall back to cache when offline
-  if (url.pathname.endsWith('/') || url.pathname.endsWith('index.html')) {
+  // index.html + POI database: both change independently of app-code
+  // deploys, so neither can be treated as an immutable static asset.
+  // Network-first, fall back to cache when offline.
+  if (url.pathname.endsWith('/') || url.pathname.endsWith('index.html') || url.pathname.endsWith('world_invaders.json')) {
     e.respondWith(
       fetch(e.request)
         .then(response => {
