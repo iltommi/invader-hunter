@@ -578,28 +578,24 @@
   #fab-heatmap:hover { box-shadow: 0 0 30px rgba(255,45,85,.5); }
   #fab-heatmap.active { background: rgba(255,45,85,.15); box-shadow: 0 0 30px rgba(255,45,85,.6); }
 
-  /* ── NEAREST MODAL ── */
+  /* ── NEAREST POPUP ── */
   #nearest-modal {
-    display:none; position:fixed; inset:0; z-index:9400;
-    background:rgba(0,0,0,.88);
-    flex-direction:column; align-items:center; justify-content:center;
-    gap:16px; padding:24px;
+    display:none; position:fixed; z-index:2000;
+    background:var(--surface); border:2px solid var(--yellow); border-radius:4px;
+    box-shadow:0 4px 24px rgba(0,0,0,.4);
+    flex-direction:column; align-items:center; text-align:center;
+    gap:10px; padding:12px; width:220px;
   }
   #nearest-modal.open { display:flex; }
   #nearest-title {
     font-family:'Press Start 2P',monospace; font-size:9px; color:var(--yellow); text-align:center;
   }
-  #nearest-card-wrap {
-    background:var(--surface); border:2px solid var(--yellow);
-    border-radius:4px; padding:12px; text-align:center;
-    max-width:260px; width:100%;
-  }
   #nearest-img {
-    width:200px; height:200px; object-fit:cover;
-    border-radius:2px; display:block; margin:0 auto 10px;
+    width:196px; height:196px; object-fit:cover;
+    border-radius:2px; display:block;
   }
   #nearest-card-id {
-    font-family:'Press Start 2P',monospace; font-size:9px; color:var(--yellow); margin-bottom:4px;
+    font-family:'Press Start 2P',monospace; font-size:9px; color:var(--yellow);
   }
   #nearest-card-dist { font-size:11px; color:#9090a0; }
   #nearest-actions { display:flex; gap:10px; }
@@ -612,11 +608,6 @@
     font-family:'Press Start 2P',monospace; font-size:8px;
     padding:10px 14px; border:none; border-radius:2px; cursor:pointer;
     background:var(--cyan); color:#000;
-  }
-  #nearest-cancel {
-    font-family:'Press Start 2P',monospace; font-size:8px;
-    padding:10px 14px; border-radius:2px; cursor:pointer;
-    background:transparent; color:#888; border:1px solid #444;
   }
 
   @keyframes pulse-loc {
@@ -708,7 +699,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-08-29 23:49</div>
+    <div class="about-build" id="about-build-date">build 2026-08-30 10:48</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -743,15 +734,12 @@
 
 <div id="nearest-modal">
   <div id="nearest-title"></div>
-  <div id="nearest-card-wrap">
-    <img id="nearest-img" alt="">
-    <div id="nearest-card-id"></div>
-    <div id="nearest-card-dist"></div>
-  </div>
+  <img id="nearest-img" alt="">
+  <div id="nearest-card-id"></div>
+  <div id="nearest-card-dist"></div>
   <div id="nearest-actions">
     <button id="nearest-yes">⚡ Yes</button>
     <button id="nearest-no">→ No</button>
-    <button id="nearest-cancel">✕ Cancel</button>
   </div>
 </div>
 
@@ -828,7 +816,7 @@
     <div class="poi-list" id="poi-list"></div>
   </div>
   <button id="fab-locate" onclick="centerOnMyLocation()" title="Center on my location">◎</button>
-  <button id="fab-nearest" onclick="showNearestMosaic()" title="5 nearest unflashed">🎯</button>
+  <button id="fab-nearest" onclick="showNearestMosaic(event)" title="5 nearest unflashed">🎯</button>
   <button id="fab-heatmap" onclick="toggleViewMode()" title="Toggle heatmap">🔥</button>
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
@@ -1293,6 +1281,7 @@ function openAbout() {
 document.addEventListener('click', () => {
   document.getElementById('stat-popup').classList.remove('open');
   document.getElementById('data-popup').classList.remove('open');
+  document.getElementById('nearest-modal').classList.remove('open');
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -2650,7 +2639,8 @@ function mlFlashFromResult(id) {
 let _nearestList = [];
 let _nearestIdx  = 0;
 
-function showNearestMosaic() {
+function showNearestMosaic(e) {
+  if (e) e.stopPropagation();
   if (!userPos) { showToast('⚠ Enable location first'); return; }
   const visited = getVisited();
   const candidates = allPOI.filter(p => p.lat && p.lng && !visited[p.id] && p.status !== 'destroyed');
@@ -2660,7 +2650,11 @@ function showNearestMosaic() {
     .sort((a, b) => a.dist - b.dist);
   _nearestIdx = 0;
   _showNearestCard();
-  document.getElementById('nearest-modal').classList.add('open');
+  const modal = document.getElementById('nearest-modal');
+  const rect  = document.getElementById('fab-nearest').getBoundingClientRect();
+  modal.style.left   = rect.left + 'px';
+  modal.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+  modal.classList.add('open');
 }
 
 function _showNearestCard() {
@@ -2691,9 +2685,9 @@ document.getElementById('nearest-no').addEventListener('click', () => {
   _showNearestCard();
 });
 
-document.getElementById('nearest-cancel').addEventListener('click', () => {
-  document.getElementById('nearest-modal').classList.remove('open');
-});
+// Clicks inside the floating window (image, Yes/No) must not bubble to the
+// document-level listener that closes it on an outside click.
+document.getElementById('nearest-modal').addEventListener('click', e => e.stopPropagation());
 
 // ─────────────────────────────────────────────────────────────
 // BOOT
