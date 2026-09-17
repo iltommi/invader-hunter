@@ -308,6 +308,48 @@
     background:transparent; color:#888; border:1px solid #444;
   }
 
+  /* ── LOCATION SEARCH ── */
+  #location-search-modal {
+    display:none; position:fixed; inset:0; z-index:9200;
+    background:rgba(0,0,0,.85);
+    flex-direction:column; align-items:center; justify-content:flex-start;
+    padding:60px 24px 24px;
+  }
+  #location-search-modal.open { display:flex; }
+  #location-search-box {
+    width:100%; max-width:420px; background:var(--surface);
+    border:1px solid var(--purple); border-radius:6px; padding:16px;
+    box-shadow:0 0 30px rgba(191,90,242,.25);
+  }
+  #location-search-title {
+    font-family:'Press Start 2P',monospace; font-size:9px; color:var(--purple);
+    margin-bottom:12px;
+  }
+  #location-search-input {
+    width:100%; box-sizing:border-box;
+    font-family:'Share Tech Mono',monospace; font-size:14px;
+    background:var(--bg); color:var(--text); border:1px solid var(--border);
+    border-radius:2px; padding:10px 12px; outline:none;
+  }
+  #location-search-input:focus { border-color:var(--purple); }
+  #location-search-results { margin-top:10px; max-height:50vh; overflow-y:auto; }
+  .location-search-item {
+    padding:10px 8px; border-bottom:1px solid var(--border);
+    font-family:'Share Tech Mono',monospace; font-size:12.5px; color:var(--text);
+    cursor:pointer; line-height:1.4;
+  }
+  .location-search-item:last-child { border-bottom:none; }
+  .location-search-item:hover { color:var(--purple); }
+  .location-search-status {
+    padding:10px 8px; font-family:'Share Tech Mono',monospace; font-size:12px; color:#808090;
+  }
+  #location-search-close {
+    margin-top:12px; width:100%;
+    font-family:'Press Start 2P',monospace; font-size:8px;
+    padding:10px 18px; border-radius:2px; cursor:pointer;
+    background:transparent; color:#888; border:1px solid #444;
+  }
+
   /* ── LOADER ── */
   #loader {
     position:fixed; inset:0; background:var(--bg); z-index:9999;
@@ -465,6 +507,18 @@
   #fab-heatmap:hover { box-shadow: 0 0 30px rgba(255,45,85,.5); }
   #fab-heatmap.active { background: rgba(255,45,85,.15); box-shadow: 0 0 30px rgba(255,45,85,.6); }
 
+  #fab-search {
+    position: absolute;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 190px; z-index: 999;
+    background: var(--surface); border: 2px solid var(--purple); color: var(--purple);
+    font-size: 18px;
+    width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 0 20px rgba(191,90,242,.3); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; padding: 0;
+  }
+  #fab-search:hover { box-shadow: 0 0 30px rgba(191,90,242,.5); }
+
   /* ── NEAREST POPUP ── */
   #nearest-modal {
     display:none; position:fixed; z-index:2000;
@@ -575,6 +629,15 @@
   </div>
 </div>
 
+<div id="location-search-modal" onclick="closeLocationSearch()">
+  <div id="location-search-box" onclick="event.stopPropagation()">
+    <div id="location-search-title">🔎 SEARCH ROAD / CITY</div>
+    <input type="text" id="location-search-input" placeholder="e.g. Rue de Rivoli, Paris" autocomplete="off">
+    <div id="location-search-results"></div>
+    <button id="location-search-close" onclick="closeLocationSearch()">✕ Close</button>
+  </div>
+</div>
+
 <div id="gallery-modal">
   <div id="gallery-header">
     <span id="gallery-title">🖼 FLASHED</span>
@@ -586,7 +649,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-08-30 10:59</div>
+    <div class="about-build" id="about-build-date">build 2026-09-17 15:49</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -681,6 +744,7 @@
   <button id="fab-locate" onclick="centerOnMyLocation()" title="Center on my location">◎</button>
   <button id="fab-nearest" onclick="showNearestMosaic(event)" title="5 nearest unflashed">🎯</button>
   <button id="fab-heatmap" onclick="toggleViewMode()" title="Toggle heatmap">🔥</button>
+  <button id="fab-search" onclick="openLocationSearch(event)" title="Search road/city">🔎</button>
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
 
@@ -1731,6 +1795,86 @@ function saveCoordsFromModal() {
   closeCoordsModal();
   refreshAll();
   showToast(`✓ Location saved for ${id}`);
+}
+
+// ─────────────────────────────────────────────────────────────
+// LOCATION SEARCH (road / city, via OSM Nominatim)
+// ─────────────────────────────────────────────────────────────
+
+let _locSearchTimer = null;
+let _locSearchAbort = null;
+
+function openLocationSearch(e) {
+  if (e) e.stopPropagation();
+  const input = document.getElementById('location-search-input');
+  input.value = '';
+  document.getElementById('location-search-results').innerHTML = '';
+  document.getElementById('location-search-modal').classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+
+function closeLocationSearch() {
+  document.getElementById('location-search-modal').classList.remove('open');
+  clearTimeout(_locSearchTimer);
+  if (_locSearchAbort) _locSearchAbort.abort();
+}
+
+document.getElementById('location-search-input').addEventListener('input', e => {
+  clearTimeout(_locSearchTimer);
+  const q = e.target.value.trim();
+  if (q.length < 3) {
+    document.getElementById('location-search-results').innerHTML = '';
+    return;
+  }
+  _locSearchTimer = setTimeout(() => _runLocationSearch(q), 500);
+});
+
+document.getElementById('location-search-input').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  clearTimeout(_locSearchTimer);
+  const q = e.target.value.trim();
+  if (q.length >= 3) _runLocationSearch(q);
+});
+
+async function _runLocationSearch(q) {
+  const resultsEl = document.getElementById('location-search-results');
+  resultsEl.innerHTML = '<div class="location-search-status">Searching…</div>';
+  if (_locSearchAbort) _locSearchAbort.abort();
+  _locSearchAbort = new AbortController();
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=0&limit=6&q=${encodeURIComponent(q)}`,
+      { signal: _locSearchAbort.signal }
+    );
+    const data = await res.json();
+    if (!data.length) {
+      resultsEl.innerHTML = '<div class="location-search-status">No results</div>';
+      return;
+    }
+    resultsEl.innerHTML = '';
+    data.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'location-search-item';
+      item.textContent = r.display_name;
+      item.onclick = () => _goToSearchResult(r);
+      resultsEl.appendChild(item);
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    resultsEl.innerHTML = '<div class="location-search-status">⚠ Search failed</div>';
+  }
+}
+
+function _goToSearchResult(r) {
+  closeLocationSearch();
+  if (!leafletMap) return;
+  if (r.boundingbox) {
+    const [south, north, west, east] = r.boundingbox.map(Number);
+    leafletMap.fitBounds([[south, west], [north, east]], { maxZoom: 17, animate: true });
+  } else {
+    leafletMap.setView([parseFloat(r.lat), parseFloat(r.lon)], 16, { animate: true });
+  }
+  showToast(`📍 ${r.display_name.split(',')[0]}`);
 }
 
 // ─────────────────────────────────────────────────────────────
