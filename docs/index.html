@@ -519,6 +519,31 @@
   }
   #fab-search:hover { box-shadow: 0 0 30px rgba(191,90,242,.5); }
 
+  #fab-distance {
+    position: absolute;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 248px; z-index: 999;
+    background: var(--surface); border: 2px solid var(--green); color: var(--green);
+    font-size: 18px;
+    width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 0 20px rgba(57,255,20,.3); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; padding: 0;
+  }
+  #fab-distance:hover { box-shadow: 0 0 30px rgba(57,255,20,.5); }
+  #fab-distance.active { background: rgba(57,255,20,.15); box-shadow: 0 0 30px rgba(57,255,20,.6); }
+
+  #nearest-dist-label {
+    display: none; position: absolute;
+    top: calc(16px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+    z-index: 999; background: var(--surface); border: 1px solid var(--green);
+    border-radius: 2px; padding: 0 14px; height: 46px;
+    align-items: center; gap: 8px; max-width: calc(100vw - 140px);
+    font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text);
+    box-shadow: 0 0 12px rgba(57,255,20,.2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    pointer-events: none;
+  }
+  #nearest-dist-label.show { display: flex; }
+
   /* ── NEAREST POPUP ── */
   #nearest-modal {
     display:none; position:fixed; z-index:2000;
@@ -649,7 +674,7 @@
 <div id="about-modal">
   <div id="about-box">
     <h2>👾 INVADER HUNTER</h2>
-    <div class="about-build" id="about-build-date">build 2026-09-17 15:49</div>
+    <div class="about-build" id="about-build-date">build 2026-09-20 10:03</div>
     <div class="about-links">
       <a href="https://github.com/iltommi/invader-hunter" target="_blank" rel="noopener">⌂ GitHub — source code</a>
       <a href="https://space-invaders.com" target="_blank" rel="noopener">👾 space-invaders.com — official artist site</a>
@@ -731,6 +756,7 @@
     <div class="stat-val" id="stat-remaining">–</div>
   </div>
   <button id="data-menu-btn" onclick="toggleDataMenu(event)" title="Settings">⚙</button>
+  <div id="nearest-dist-label"></div>
 
   <div class="sidebar">
     <div class="sidebar-handle" onclick="toggleSheet()"></div>
@@ -745,6 +771,7 @@
   <button id="fab-nearest" onclick="showNearestMosaic(event)" title="5 nearest unflashed">🎯</button>
   <button id="fab-heatmap" onclick="toggleViewMode()" title="Toggle heatmap">🔥</button>
   <button id="fab-search" onclick="openLocationSearch(event)" title="Search road/city">🔎</button>
+  <button id="fab-distance" onclick="toggleNearestLabel(event)" title="Show/hide distance to nearest invader">📏</button>
   <button id="fab-list" onclick="toggleSheet()">≡</button>
 </div>
 
@@ -1155,6 +1182,7 @@ function refreshAll() {
   updateStats(visited);
   renderMapMarkers(visited);
   renderList(visited);
+  _updateNearestLabel();
 }
 
 function updateStats(visited = getVisited()) {
@@ -1652,6 +1680,8 @@ function onLocation(pos) {
     _centerOnNextFix = false;
     leafletMap.panTo(latlng, { animate: true });
   }
+
+  _updateNearestLabel();
 }
 
 function onLocationError(err) {
@@ -1750,6 +1780,44 @@ function _haversineKm(lat1, lng1, lat2, lng2) {
 
 function _fmtDist(km) {
   return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// LIVE NEAREST-DISTANCE LABEL
+// ─────────────────────────────────────────────────────────────
+
+let _nearestLabelOn = false;
+
+function toggleNearestLabel(e) {
+  if (e) e.stopPropagation();
+  _nearestLabelOn = !_nearestLabelOn;
+  document.getElementById('fab-distance').classList.toggle('active', _nearestLabelOn);
+  document.getElementById('nearest-dist-label').classList.toggle('show', _nearestLabelOn);
+  if (_nearestLabelOn) {
+    if (!userPos && !isTracking) startLocate();
+    _updateNearestLabel();
+  }
+}
+
+function _updateNearestLabel() {
+  if (!_nearestLabelOn) return;
+  const label = document.getElementById('nearest-dist-label');
+  if (!userPos) {
+    label.textContent = '📡 waiting for location…';
+    return;
+  }
+  const visited = getVisited();
+  const candidates = allPOI.filter(p => p.lat && p.lng && !visited[p.id] && p.status !== 'destroyed');
+  if (!candidates.length) {
+    label.textContent = '🎯 no unflashed invaders';
+    return;
+  }
+  let best = null, bestDist = Infinity;
+  for (const p of candidates) {
+    const d = _haversineKm(userPos.lat, userPos.lng, p.lat, p.lng);
+    if (d < bestDist) { bestDist = d; best = p; }
+  }
+  label.textContent = `🎯 ${best.id} — ${_fmtDist(bestDist)}`;
 }
 
 // ─────────────────────────────────────────────────────────────
